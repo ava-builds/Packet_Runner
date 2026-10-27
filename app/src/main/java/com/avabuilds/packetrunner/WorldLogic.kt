@@ -39,6 +39,13 @@ sealed interface BridgeAction {
     data object Filter : BridgeAction
 }
 
+/** The ports a bridge sends the frame out of (empty = dropped). */
+fun BridgeAction.outPorts(): Set<Int> = when (this) {
+    is BridgeAction.Forward -> setOf(port)
+    is BridgeAction.Flood -> ports.toSet()
+    BridgeAction.Filter -> emptySet()
+}
+
 /** A learning bridge / switch: learns source MACs, then forwards, floods or filters. */
 class LearningBridge(private val portCount: Int) {
     private val table = linkedMapOf<String, Int>()

@@ -33,6 +33,24 @@ class WorldLogicTest {
         assertEquals(mapOf("A" to 1, "C" to 2, "B" to 1, "D" to 3), br.learned)
     }
 
+    @Test fun outPortsMatchActions() {
+        assertEquals(setOf(2, 3), BridgeAction.Flood(listOf(2, 3)).outPorts())
+        assertEquals(setOf(1), BridgeAction.Forward(1).outPorts())
+        assertEquals(emptySet<Int>(), BridgeAction.Filter.outPorts())
+    }
+
+    @Test fun switchCityFramesFollowTopology() {
+        val bridge = LearningBridge(SwitchCityLevel.PORT_COUNT)
+        val actions = SwitchCityLevel.frames.map { bridge.receive(it.src, it.dst, SwitchCityLevel.portOf(it.src)) }
+        assertEquals(
+            listOf(
+                BridgeAction.Flood(listOf(2, 3)), BridgeAction.Forward(1), BridgeAction.Filter,
+                BridgeAction.Forward(2), BridgeAction.Forward(3), BridgeAction.Forward(1),
+            ),
+            actions,
+        )
+    }
+
     // ---- World 4 ----
     @Test fun tunnelWrapsAndUnwraps() {
         val pkt = IpPacket(Ipv4.parse("1.1.1.1"), Ipv4.parse("128.96.5.9"))
@@ -58,16 +76,28 @@ class WorldLogicTest {
         assertEquals(2501L, Tcp.cumulativeAck(1001, listOf(s3, s1, TcpSegment(1501, 500))))
     }
 
-    // ---- Levels: every question's answer must be among its options, once ----
-    @Test fun quizLevelsAreWellFormed() {
-        assertEquals(setOf(1, 2, 4, 5), QuizLevels.keys)
-        QuizLevels.values.forEach { level ->
-            assertTrue(level.questions.isNotEmpty())
-            level.questions.forEach { q ->
-                assertFalse("answer duplicated in wrong: ${q.prompt}", q.answer in q.wrong)
-                assertTrue("needs 2+ options: ${q.prompt}", q.wrong.isNotEmpty())
-                assertEquals("duplicate options: ${q.prompt}", q.wrong.size, q.wrong.toSet().size)
-            }
-        }
+    // ---- Levels: the hands-on puzzles must be solvable with the logic ----
+    @Test fun wifiPuzzleHasHiddenAndAudiblePositions() {
+        val a = WifiFogLevel.a; val b = WifiFogLevel.b
+        val spots = (0..WifiFogLevel.TRACK).filter { Wifi.isHiddenPair(a, WifiNode("C", it), b, WifiFogLevel.RANGE) }
+        assertTrue(spots.isNotEmpty())
+        assertTrue(WifiFogLevel.HIDDEN_C in spots)
+        assertTrue((0..WifiFogLevel.TRACK).any { Wifi.canHear(a, WifiNode("C", it), WifiFogLevel.RANGE) })
+    }
+
+    @Test fun transportPuzzleStallsThenRecovers() {
+        val segs = TransportLevel.segments
+        val arrived = segs.filterIndexed { i, _ -> i != TransportLevel.LOST_INDEX }
+        val stalled = Tcp.cumulativeAck(TransportLevel.FIRST_SEQ, arrived)
+        assertEquals(segs[TransportLevel.LOST_INDEX].seq, stalled)
+        assertEquals(
+            segs.last().seq + segs.last().len,
+            Tcp.cumulativeAck(TransportLevel.FIRST_SEQ, segs),
+        )
+    }
+
+    @Test fun mobileIpPuzzleAddressesAreDistinct() {
+        val all = listOf(MobileIpLevel.pip, MobileIpLevel.home, MobileIpLevel.homeAgent, MobileIpLevel.careOf)
+        assertEquals(4, all.toSet().size)
     }
 }

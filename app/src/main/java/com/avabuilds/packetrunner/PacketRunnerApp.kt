@@ -51,11 +51,13 @@ fun PacketRunnerApp(modifier: Modifier = Modifier) {
                         }
                         screen = Screen.Debrief(current.world, result)
                     }
-                    val quiz = QuizLevels[current.world]
-                    if (quiz != null) {
-                        QuizScreen(level = quiz, onFinish = onFinish, onQuit = { screen = Screen.Map })
-                    } else {
-                        RouterStationScreen(onFinish = onFinish, onQuit = { screen = Screen.Map })
+                    val onQuit = { screen = Screen.Map }
+                    when (current.world) {
+                        WifiFogLevel.WORLD -> WifiFogScreen(onFinish, onQuit)
+                        SwitchCityLevel.WORLD -> SwitchCityScreen(onFinish, onQuit)
+                        MobileIpLevel.WORLD -> MobileIpScreen(onFinish, onQuit)
+                        TransportLevel.WORLD -> TransportScreen(onFinish, onQuit)
+                        else -> RouterStationScreen(onFinish, onQuit)
                     }
                 }
 
@@ -70,8 +72,18 @@ fun PacketRunnerApp(modifier: Modifier = Modifier) {
     }
 }
 
-private fun briefingFor(world: Int): Briefing =
-    QuizLevels[world]?.briefing ?: RouterStationLevel.briefing
+private fun briefingFor(world: Int): Briefing = when (world) {
+    WifiFogLevel.WORLD -> WifiFogLevel.briefing
+    SwitchCityLevel.WORLD -> SwitchCityLevel.briefing
+    MobileIpLevel.WORLD -> MobileIpLevel.briefing
+    TransportLevel.WORLD -> TransportLevel.briefing
+    else -> RouterStationLevel.briefing
+}
 
-private fun whatReallyHappenedFor(world: Int): String =
-    QuizLevels[world]?.whatReallyHappened ?: RouterStationLevel.WHAT_REALLY_HAPPENED
+private fun whatReallyHappenedFor(world: Int): String = when (world) {
+    WifiFogLevel.WORLD -> WifiFogLevel.WHAT_REALLY_HAPPENED
+    SwitchCityLevel.WORLD -> SwitchCityLevel.WHAT_REALLY_HAPPENED
+    MobileIpLevel.WORLD -> MobileIpLevel.WHAT_REALLY_HAPPENED
+    TransportLevel.WORLD -> TransportLevel.WHAT_REALLY_HAPPENED
+    else -> RouterStationLevel.WHAT_REALLY_HAPPENED
+}
