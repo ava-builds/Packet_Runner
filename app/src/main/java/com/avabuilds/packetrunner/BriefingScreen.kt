@@ -55,6 +55,11 @@ fun BriefingScreen(briefing: Briefing, onStart: () -> Unit, onBack: () -> Unit) 
             }
         }
 
+        Panel(color = PR.Purple50) {
+            Text("📖 In the book", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PR.Purple800)
+            Text(briefing.book, fontSize = 13.sp, lineHeight = 19.sp, color = PR.Muted)
+        }
+
         Spacer(Modifier.height(8.dp))
         PrimaryButton("Start mission", onClick = onStart)
     }

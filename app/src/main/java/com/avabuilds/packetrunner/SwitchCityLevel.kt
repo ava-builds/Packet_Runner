@@ -31,7 +31,7 @@ object SwitchCityLevel {
         title = "Learn the streets",
         nanaSays = "Pip, a switch is a city guide who learns who lives where just by " +
             "watching who sends frames. You run the switch now. Tap the ports to send each frame!",
-        why = "A learning bridge (브리지) fills its MAC table automatically. When a frame arrives " +
+        why = "A learning bridge (브리지), also called a LAN switch, fills its forwarding table automatically. When a frame arrives " +
             "it remembers the source on that port, then decides what to do with the destination.",
         howToThink = "The table already shows who the switch has learned. Destination not in it? " +
             "Send to every other port (flood). On the same port it came from? Send nowhere (filter). " +
@@ -40,13 +40,16 @@ object SwitchCityLevel {
             "Learning bridge · 학습 브리지",
             "Flooding · 플러딩",
             "Filtering · 필터링",
-            "MAC table",
+            "Forwarding table · 포워딩 테이블",
         ),
+        book = "Switching and bridging · Learning bridges (LAN switches): learn from the source " +
+            "address, then forward, flood or drop.",
     )
 
     const val WHAT_REALLY_HAPPENED =
         "A bridge learns by looking at the SOURCE address of every frame, and decides by looking at " +
             "the DESTINATION. Unknown destination: flood. Destination on the same segment: filter. " +
             "Known destination elsewhere: forward. Over time most frames are forwarded to one port " +
-            "instead of flooded, so the network stays efficient."
+            "instead of flooded, so the network stays efficient. Entries expire if a host stays " +
+            "silent, so the bridge forgets stale information."
 }

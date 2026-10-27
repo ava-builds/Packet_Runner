@@ -8,6 +8,8 @@ data class Briefing(
     val why: String,
     val howToThink: String,
     val keywords: List<String>,
+    /** Where the book covers this topic (topic names only: chapter numbers differ by edition). */
+    val book: String,
 )
 
 /** A wrong answer, kept so the player can review it later (Mistake Notebook). */
@@ -53,7 +55,8 @@ object RouterStationLevel {
         nanaSays = "Pip, you just arrived at router R2. Routers don't know the whole map. " +
             "They only decide where you go next!",
         why = "Every router has a forwarding table (포워딩 테이블). It compares your destination " +
-            "IP with each row and sends you out of one interface: the next hop (다음 홉).",
+            "IP with each row and sends you out of one interface: the next hop (다음 홉). " +
+            "(A routing table is different: routing protocols build it, and it feeds the forwarding table.)",
         howToThink = "For each row, put the mask stencil on the destination: D AND mask. " +
             "If the result equals the row's network number, that row is your exit. " +
             "Then change only your MAC raincoat. Your IP coat never changes!",
@@ -63,13 +66,16 @@ object RouterStationLevel {
             "AND 연산",
             "Next hop · 다음 홉",
         ),
+        book = "Internetworking · IP datagram forwarding, subnetting and ARP. A forwarding table is " +
+            "what a router uses for each packet; a routing table is built by routing protocols.",
     )
 
     const val WHAT_REALLY_HAPPENED =
         "At every router, the IP header keeps the same source and destination address " +
             "(only TTL goes down by 1). The Ethernet frame is rebuilt with new MAC addresses " +
-            "for the next link. The router chose the next hop by checking (D AND mask) == network " +
-            "for each row of its forwarding table."
+            "for the next link, and the router uses ARP to find the next hop's MAC address. " +
+            "The router chose the next hop by checking (D AND mask) == network for each row of " +
+            "its forwarding table."
 
     fun starsFor(mistakeCount: Int): Int = when {
         mistakeCount == 0 -> 3

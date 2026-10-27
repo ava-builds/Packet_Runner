@@ -71,12 +71,15 @@ object TransportLevel {
             "Port · 포트",
             "TCP vs UDP",
         ),
+        book = "End-to-End Protocols · UDP as a simple demultiplexer (ports), and TCP: three-way " +
+            "handshake, sequence numbers and cumulative acknowledgments.",
     )
 
     const val WHAT_REALLY_HAPPENED =
         "TCP opens with a 3-way handshake, and each ACK number is the next byte expected (a SYN uses " +
             "up one sequence number). ACKs are cumulative, so a lost segment stalls the ACK number " +
-            "until it is resent. UDP skips all of this for speed. Port numbers pick the application " +
+            "until it is resent (real TCP notices a loss by a timeout or by repeated duplicate ACKs). " +
+            "UDP skips all of this for speed. Port numbers pick the application " +
             "on the phone."
 }
 

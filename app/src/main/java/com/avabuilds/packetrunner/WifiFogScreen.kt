@@ -73,13 +73,15 @@ object WifiFogLevel {
             "RTS / CTS",
             "NAV · 대기 시간",
         ),
+        book = "Getting Connected · Wireless links (802.11): the hidden terminal problem, collision " +
+            "avoidance (MACA-style RTS/CTS) and the ACK that ends the exchange.",
     )
 
     const val WHAT_REALLY_HAPPENED =
         "Wi-Fi radios can't transmit and listen at once, so collisions can't be detected. A hidden " +
             "terminal can't hear another sender that still reaches the same receiver. RTS/CTS lets " +
-            "the receiver announce the transfer to everyone in its range. Anyone who overhears the " +
-            "RTS or CTS sets its NAV and stays quiet for the stated duration."
+            "the receiver announce the transfer to everyone in its range. Any node that hears the " +
+            "CTS stays quiet for the length it announces (802.11 calls this timer the NAV)."
 }
 
 private const val STAGES = 4
@@ -261,7 +263,7 @@ fun WifiFogScreen(onFinish: (LevelResult) -> Unit, onQuit: () -> Unit) {
                     if (value == target) {
                         done = true
                         say = Say("NAV = ${level.CTS_HEARD_AT_US} + ${level.CTS_DURATION_US} = $target µs. " +
-                            "C stays silent until then, so B's transfer is safe.")
+                            "C stays silent until then (802.11 calls this timer the NAV), so B's transfer is safe.")
                     } else {
                         wrong(
                             "When can C transmit after hearing the CTS?",

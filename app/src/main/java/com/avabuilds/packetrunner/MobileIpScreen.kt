@@ -45,7 +45,8 @@ object MobileIpLevel {
         nanaSays = "Pip, Mom moved to Yangon but her phone keeps its home address. " +
             "Everyone still sends to the old address. You get to be the tunnel builder!",
         why = "Mobile IP (모바일 IP) lets a host keep one permanent home address while it moves. " +
-            "A home agent (홈 에이전트) receives packets for it and tunnels them to the care-of address.",
+            "A home agent (홈 에이전트) receives packets for it and tunnels them to the care-of address, " +
+                "where a foreign agent (in the visited network) hands them to the host.",
         howToThink = "Senders never change the destination. The home agent wraps the whole packet " +
             "inside a new IP header (source = home agent, destination = care-of address). " +
             "At the end of the tunnel the outer header is removed.",
@@ -53,15 +54,18 @@ object MobileIpLevel {
             "Home agent · 홈 에이전트",
             "Care-of address · 임시 주소",
             "Tunneling · 터널링",
-            "Encapsulation · 캡슐화",
+            "Triangle routing · 삼각 라우팅",
         ),
+        book = "Advanced Internetworking · Routing to mobile hosts (Mobile IP): home agent, foreign " +
+            "agent, care-of address, tunneling, and the triangle routing problem.",
     )
 
     const val WHAT_REALLY_HAPPENED =
         "Pip's packet is addressed to Mom's permanent home address. The home agent captures it and " +
             "encapsulates it: outer source = home agent, outer destination = care-of address, original " +
             "packet inside. At Mom's location the outer header is removed, and the original packet is " +
-            "delivered to her phone. Her reply goes straight to Pip, without the tunnel."
+            "delivered to her phone. Her reply goes straight to Pip, without the tunnel, so the two " +
+            "directions take different paths (this detour is called triangle routing)."
 }
 
 private const val STEPS = 4
