@@ -2,40 +2,54 @@ package com.avabuilds.packetrunner
 
 import androidx.compose.ui.graphics.Color
 
-/** Colors from the Figma style guide. */
+/** The app palette: five blues from the style guide, plus a few functional accents. */
+object Palette5 {
+    val IcyBlue = Color(0xFFABD2FA)
+    val Cornflower = Color(0xFF7692FF)
+    val PersianBlue = Color(0xFF1B2CC1)
+    val DuskBlue = Color(0xFF3D518C)
+    val DeepNavy = Color(0xFF091540)
+}
+
+/** Semantic colors used across the game screens. */
 object PR {
-    val Bg = Color(0xFFF6F4FF)
-    val Ink = Color(0xFF1F1E2E)
-    val Muted = Color(0xFF6B6A7A)
+    val Bg = Palette5.IcyBlue
+    val Ink = Palette5.DeepNavy
+    val Muted = Palette5.DuskBlue
     val White = Color(0xFFFFFFFF)
-    val Line = Color(0xFFD9D6EA)
-    val Gray = Color(0xFFB4B2A9)
-    val GrayFill = Color(0xFFE8E6DF)
+    val Line = Palette5.Cornflower
+    val Gray = Color(0xFF8CA0D8)
+    val GrayFill = Color(0xFFD5E4FB)
 
-    val Teal = Color(0xFF1D9E75)
-    val Teal50 = Color(0xFFE1F5EE)
-    val Teal800 = Color(0xFF085041)
+    // Primary action
+    val Teal = Palette5.PersianBlue
+    val Teal50 = Color(0xFFD6E7FD)
+    val Teal800 = Palette5.PersianBlue
 
-    val Purple = Color(0xFF7F77DD)
-    val Purple50 = Color(0xFFEEEDFE)
-    val Purple800 = Color(0xFF3C3489)
+    // Panels and accents
+    val Purple = Palette5.Cornflower
+    val Purple50 = Color(0xFFE6ECFF)
+    val Purple800 = Palette5.PersianBlue
 
+    // Functional: errors, success, stars
     val Red = Color(0xFFE24B4A)
     val Red50 = Color(0xFFFCEBEB)
     val Red800 = Color(0xFF791F1F)
 
-    val Green50 = Color(0xFFEAF3DE)
-    val Green600 = Color(0xFF3B6D11)
-    val Green800 = Color(0xFF27500A)
+    val Green50 = Color(0xFFE2F5E9)
+    val Green600 = Color(0xFF2F8F57)
+    val Green800 = Color(0xFF14502F)
 
     val Amber = Color(0xFFEF9F27)
     val Amber50 = Color(0xFFFAEEDA)
     val Amber800 = Color(0xFF633806)
 
-    val Blue = Color(0xFF378ADD)
-    val Blue50 = Color(0xFFE6F1FB)
-    val Blue800 = Color(0xFF0C447C)
+    val Blue = Palette5.DuskBlue
+    val Blue50 = Color(0xFFD6E4FF)
+    val Blue800 = Palette5.DeepNavy
 
-    val Board = Color(0xFF2C2C2A)
-    val BoardText = Color(0xFFF1EFE8)
+    // Dark boards (tables, scenario panels)
+    val Board = Palette5.DeepNavy
+    val BoardText = Palette5.IcyBlue
+    val BoardRowSelected = Palette5.DuskBlue
 }

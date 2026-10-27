@@ -238,7 +238,7 @@ private fun ForwardingBoard(dest: Ipv4, peekRow: Int?, onRow: (Int) -> Unit) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .background(if (i == peekRow) androidx.compose.ui.graphics.Color(0xFF444441) else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(6.dp))
+                    .background(if (i == peekRow) PR.BoardRowSelected else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(6.dp))
                     .clickable { onRow(i) }
                     .padding(horizontal = 4.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,

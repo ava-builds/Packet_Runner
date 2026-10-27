@@ -42,22 +42,50 @@ import io.github.sceneview.utils.worldToScreen
 import kotlin.math.roundToInt
 
 /** Colors for the 3D props, created once per scene. */
-private class Palette(private val loader: MaterialLoader) {
+internal class Palette(private val loader: MaterialLoader) {
     private fun mat(hex: Long, rough: Float = 0.5f) = loader.createColorInstance(Color(hex), roughness = rough)
+    private fun glass(hex: Long, alpha: Float) = loader.createColorInstance(Color(hex).copy(alpha = alpha), roughness = 0.6f)
 
-    val ground: MaterialInstance = mat(0xFFE4E0F7, 0.9f)
-    val link: MaterialInstance = mat(0xFF9A97AE, 0.8f)
-    val route: MaterialInstance = mat(0xFF1D9E75, 0.3f)
-    val router: MaterialInstance = mat(0xFF7F77DD)
-    val routerTop: MaterialInstance = mat(0xFF3C3489)
-    val network: MaterialInstance = mat(0xFF5DCAA5)
-    val house: MaterialInstance = mat(0xFF085041)
-    val source: MaterialInstance = mat(0xFF378ADD)
+    // Level maps: a dark navy board with a glowing route
+    val ground: MaterialInstance = mat(0xFF091540, 0.9f)
+    val link: MaterialInstance = mat(0xFF3D518C, 0.8f)
+    val route: MaterialInstance = mat(0xFFABD2FA, 0.25f)
+    val router: MaterialInstance = mat(0xFF7692FF)
+    val routerTop: MaterialInstance = mat(0xFFABD2FA)
+    val network: MaterialInstance = mat(0xFF3D518C)
+    val house: MaterialInstance = mat(0xFFABD2FA)
+    val source: MaterialInstance = mat(0xFF1B2CC1)
+
+    // Characters keep their own colors
     val pip: MaterialInstance = mat(0xFF5DCAA5, 0.35f)
     val white: MaterialInstance = mat(0xFFFFFFFF, 0.3f)
     val dark: MaterialInstance = mat(0xFF0D2B22, 0.4f)
     val glitch: MaterialInstance = mat(0xFFE24B4A, 0.4f)
     val goal: MaterialInstance = mat(0xFFEF9F27, 0.3f)
+
+    // Island map
+    val sea: MaterialInstance = mat(0xFF1B2CC1, 0.6f)
+    val sand: MaterialInstance = mat(0xFFABD2FA, 0.95f)
+    val cliff: MaterialInstance = mat(0xFF3D518C, 0.95f)
+    val grass: MaterialInstance = mat(0xFF7692FF, 0.95f)
+    val grassDark: MaterialInstance = mat(0xFF5A78E6, 0.95f)
+    val leaf: MaterialInstance = mat(0xFF091540, 0.9f)
+    val trunk: MaterialInstance = mat(0xFF3D518C, 0.9f)
+    val road: MaterialInstance = mat(0xFFEAF2FF, 0.9f)
+    val lake: MaterialInstance = mat(0xFFABD2FA, 0.4f)
+    val rock: MaterialInstance = mat(0xFF2A3A85, 0.9f)
+    val snow: MaterialInstance = mat(0xFFFFFFFF, 0.9f)
+    val sail: MaterialInstance = mat(0xFFFFFFFF, 0.8f)
+    val wood: MaterialInstance = mat(0xFF3D518C, 0.8f)
+    val building: MaterialInstance = mat(0xFF1B2CC1, 0.6f)
+    val buildingLight: MaterialInstance = mat(0xFFABD2FA, 0.6f)
+    val wall: MaterialInstance = mat(0xFFF4F8FF, 0.8f)
+    val roof: MaterialInstance = mat(0xFF091540, 0.7f)
+    val train: MaterialInstance = mat(0xFFF5C518, 0.5f)
+    val rail: MaterialInstance = mat(0xFFABD2FA, 0.6f)
+    val screen: MaterialInstance = mat(0xFFE3F0FF, 0.2f)
+    val radio: MaterialInstance = glass(0xFFABD2FA, 0.25f)
+    val fog: MaterialInstance = glass(0xFFFFFFFF, 0.85f)
 }
 
 private val OverviewPosition = Position(0f, 14f, 13f)
@@ -238,10 +266,10 @@ private fun SceneScope.GoalMarker(n: MapNode, p: Palette) {
 }
 
 @Composable
-private fun SceneScope.PipModel(pos: Position, p: Palette) {
+internal fun SceneScope.PipModel(pos: Position, p: Palette) {
     Node(position = pos) {
         CubeNode(size = Size(0.85f, 0.6f, 0.85f), materialInstance = p.pip)
-        CubeNode(size = Size(0.86f, 0.06f, 0.86f), materialInstance = p.routerTop, position = Position(0f, 0.3f, 0f))
+        CubeNode(size = Size(0.86f, 0.06f, 0.86f), materialInstance = p.leaf, position = Position(0f, 0.3f, 0f))
         SphereNode(radius = 0.12f, materialInstance = p.white, position = Position(-0.2f, 0.05f, 0.43f))
         SphereNode(radius = 0.12f, materialInstance = p.white, position = Position(0.2f, 0.05f, 0.43f))
         SphereNode(radius = 0.06f, materialInstance = p.dark, position = Position(-0.2f, 0.05f, 0.54f))

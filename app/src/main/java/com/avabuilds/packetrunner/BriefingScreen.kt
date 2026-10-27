@@ -41,9 +41,9 @@ fun BriefingScreen(briefing: Briefing, onStart: () -> Unit, onBack: () -> Unit) 
             Text(briefing.why, fontSize = 14.sp, lineHeight = 21.sp, color = PR.Muted)
         }
 
-        Panel(color = PR.Green50) {
-            Text("💡 How to think", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = PR.Green800)
-            Text(briefing.howToThink, fontSize = 14.sp, lineHeight = 21.sp, color = PR.Green800)
+        Panel(color = PR.Teal50) {
+            Text("💡 How to think", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = PR.Teal800)
+            Text(briefing.howToThink, fontSize = 14.sp, lineHeight = 21.sp, color = PR.Teal800)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

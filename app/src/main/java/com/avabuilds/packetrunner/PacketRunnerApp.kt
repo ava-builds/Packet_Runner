@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -13,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 
 /** Which screen is showing. */
 sealed interface Screen {
@@ -23,15 +25,18 @@ sealed interface Screen {
 }
 
 @Composable
-fun PacketRunnerApp(modifier: Modifier = Modifier) {
+fun PacketRunnerApp(modifier: Modifier = Modifier, onBackgroundChange: (Color) -> Unit = {}) {
     var screen by remember { mutableStateOf<Screen>(Screen.Map) }
     // world number -> best stars earned
     val worldStars = remember { mutableStateMapOf<Int, Int>() }
 
     BackHandler(enabled = screen != Screen.Map) { screen = Screen.Map }
 
+    val background = if (screen == Screen.Map) MapBackground else PR.Bg
+    SideEffect { onBackgroundChange(background) }
+
     CompositionLocalProvider(LocalContentColor provides PR.Ink) {
-        Box(modifier.fillMaxSize().background(PR.Bg)) {
+        Box(modifier.fillMaxSize().background(background)) {
             when (val current = screen) {
                 Screen.Map -> WorldMapScreen(
                     worldStars = worldStars,

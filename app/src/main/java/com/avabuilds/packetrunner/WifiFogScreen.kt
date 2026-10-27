@@ -303,9 +303,9 @@ private fun RadioMap(cPos: Int, draggable: Boolean, onMoveC: (Int) -> Unit) {
     val level = WifiFogLevel
     val measurer = rememberTextMeasurer()
     val lanes = listOf(
-        Triple("A", level.a.x, Color(0xFF378ADD)),
-        Triple("B", level.b.x, Color(0xFF1D9E75)),
-        Triple("C", cPos, Color(0xFFEF9F27)),
+        Triple("A", level.a.x, Palette5.Cornflower),
+        Triple("B", level.b.x, Palette5.IcyBlue),
+        Triple("C", cPos, PR.Amber),
     )
     Canvas(
         Modifier
