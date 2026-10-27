@@ -59,7 +59,7 @@ val Worlds = listOf(
 // Layout of the infographic, in dp
 private val HeaderHeight = 200.dp
 private val SectionHeight = 250.dp
-private val FooterHeight = 170.dp
+private val FooterHeight = 200.dp
 private val RoadWidth = 96.dp
 private val BandHeight = 112.dp
 
@@ -69,9 +69,6 @@ val MapBackground = Palette5.Cornflower
 private val RoadColor = Palette5.DuskBlue
 private val BandColor = Color(0xFFF4F8FF)
 private val CloudColor = Color.White
-private val CrownA = Palette5.IcyBlue
-private val CrownB = Palette5.PersianBlue
-private val Trunk = Palette5.DuskBlue
 
 /**
  * Pip's journey as a tall scrolling infographic: one winding road from Seoul (top) to Mom (bottom),
@@ -127,7 +124,7 @@ fun WorldMapScreen(worldStars: Map<Int, Int>, onPlayWorld: (Int) -> Unit) {
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .offset(y = HeaderHeight + SectionHeight * Worlds.size + 40.dp)
+                    .offset(y = HeaderHeight + SectionHeight * Worlds.size + 128.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
             )
@@ -222,7 +219,7 @@ private fun Band(
 // The road and scenery
 // ---------------------------------------------------------------------------
 
-/** Draws the winding road and the scenery around it for [sections] stacked bands. */
+/** Draws the winding road and the networked town around it for [sections] stacked bands. */
 private fun DrawScope.drawWorld(sections: Int) {
     val d = density
     val w = size.width
@@ -257,41 +254,47 @@ private fun DrawScope.drawWorld(sections: Int) {
             }
         }
     }
+    drawPath(road, Palette5.IcyBlue, style = Stroke(width = roadW + 18f * d, cap = StrokeCap.Round, join = StrokeJoin.Round)) // kerb
     drawPath(road, RoadColor, style = Stroke(width = roadW, cap = StrokeCap.Round, join = StrokeJoin.Round))
     drawPath(
         road,
-        Palette5.IcyBlue.copy(alpha = 0.55f),
+        Color.White.copy(alpha = 0.7f),
         style = Stroke(width = 3f * d, pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f * d, 16f * d))),
     )
 
-    // Scenery in the free corners between bands (the gap is 126dp tall, centered on y)
-    for (i in 0 until sections - 1) {
-        val y = header + sec * (i + 1)
-        val freeLeft = i % 2 == 0
-        val side = if (freeLeft) 1f else -1f
-        val base = if (freeLeft) 0f else w
-        tree(Offset(base + side * w * 0.11f, y + 52f * d), 0.95f * d)
-        lamp(Offset(base + side * w * 0.28f, y + 56f * d), d)
-        building(Offset(base + side * w * 0.42f - (if (freeLeft) 0f else 34f * d), y - 28f * d), 34f * d, 62f * d)
-        tree(Offset(base + side * w * 0.64f, y + 50f * d), 0.8f * d)
+    // Pylons carry two cables down the page, with data packets riding on them
+    val pylons = buildList {
+        add(Offset(w * 0.88f, header + 60f * d))
+        for (i in 0 until sections - 1) {
+            add(Offset(if (i % 2 == 0) w * 0.10f else w * 0.90f, header + sec * (i + 1) + 58f * d))
+        }
+        add(Offset(w * 0.10f, header + sec * sections + 90f * d))
     }
-    // Trees at the top and bottom of the page
-    tree(Offset(w * 0.93f, header + 44f * d), 0.9f * d)
-    tree(Offset(w * 0.07f, header + sec * sections + 20f * d), 1.0f * d)
-    tree(Offset(w * 0.93f, header + sec * sections + 60f * d), 0.9f * d)
-    // Finish flag at the end of the road
-    val endX = xR
-    val endY = cy(sections - 1)
-    drawLine(Palette5.DeepNavy, Offset(endX + roadW * 0.9f, endY + roadW * 0.5f), Offset(endX + roadW * 0.9f, endY - roadW * 0.6f), strokeWidth = 4f * d)
-    drawPath(
-        Path().apply {
-            moveTo(endX + roadW * 0.9f, endY - roadW * 0.6f)
-            lineTo(endX + roadW * 0.9f + 30f * d, endY - roadW * 0.45f)
-            lineTo(endX + roadW * 0.9f, endY - roadW * 0.3f)
-            close()
-        },
-        PR.Amber,
-    )
+    val packetSpots = pylons.zipWithNext().map { (a, b) -> cables(a, b, d, packetAt = 0.16f) }
+    pylons.forEach { pylon(it, d) }
+
+    // The town in the free corners between bands (the gap is about 126dp tall, centered on y)
+    for (i in 0 until sections - 1) {
+        val y = header + sec * (i + 1) + 58f * d
+        val mirror = i % 2 != 0
+        fun x(frac: Float) = if (mirror) w * (1f - frac) else w * frac
+        if (!mirror) {
+            cellTower(Offset(x(0.26f), y), 0.72f * d)
+            office(Offset(x(0.40f), y), 34f * d, 70f * d)
+            shop(Offset(x(0.54f), y), 52f * d, 42f * d)
+        } else {
+            dataCenter(Offset(x(0.28f), y), 70f * d, 60f * d)
+            house(Offset(x(0.45f), y), 46f * d, 40f * d)
+            dish(Offset(x(0.56f), y), d)
+        }
+        lamp(Offset(x(0.66f), y), d)
+    }
+
+    // Packets go on last so no building covers them
+    packetSpots.forEach { packet(it, d) }
+
+    // Mom's home at the end of the road, with an antenna
+    momsHome(Offset(w * 0.52f, header + sec * sections + 92f * d), d)
 }
 
 private fun DrawScope.cloud(at: Offset, s: Float) {
@@ -301,29 +304,187 @@ private fun DrawScope.cloud(at: Offset, s: Float) {
     drawRoundRect(CloudColor, at + Offset(-s * 0.7f, s * 0.2f), Size(s * 1.7f, s * 0.38f), CornerRadius(s * 0.2f))
 }
 
-private fun DrawScope.tree(base: Offset, k: Float) {
-    drawRoundRect(Trunk, base + Offset(-3f * k, -34f * k), Size(6f * k, 36f * k), CornerRadius(2f * k))
-    drawCircle(CrownB, 24f * k, base + Offset(0f, -52f * k))
-    drawCircle(CrownA, 9f * k, base + Offset(-8f * k, -60f * k))
+private const val PYLON_HEIGHT = 118f
+private val PylonArms = listOf(10f to 26f, 30f to 20f) // (distance below the top, half width) in dp
+
+/** A lattice transmission pylon standing on [base] (bottom center). */
+private fun DrawScope.pylon(base: Offset, d: Float) {
+    val h = PYLON_HEIGHT * d
+    val top = base.y - h
+    val c = Palette5.DeepNavy
+    val bw = 22f * d
+    val tw = 6f * d
+    fun leftX(t: Float) = base.x - (bw + (tw - bw) * t)
+    fun rightX(t: Float) = base.x + (bw + (tw - bw) * t)
+    fun yAt(t: Float) = base.y - h * t
+    drawLine(c, Offset(leftX(0f), yAt(0f)), Offset(leftX(1f), yAt(1f)), 3f * d)
+    drawLine(c, Offset(rightX(0f), yAt(0f)), Offset(rightX(1f), yAt(1f)), 3f * d)
+    val levels = 5
+    for (j in 0 until levels) {
+        val t0 = j / levels.toFloat()
+        val t1 = (j + 1) / levels.toFloat()
+        drawLine(c, Offset(leftX(t0), yAt(t0)), Offset(rightX(t1), yAt(t1)), 2f * d)
+        drawLine(c, Offset(rightX(t0), yAt(t0)), Offset(leftX(t1), yAt(t1)), 2f * d)
+    }
+    for ((dy, half) in PylonArms) {
+        val y = top + dy * d
+        drawLine(c, Offset(base.x - half * d, y), Offset(base.x + half * d, y), 3f * d)
+        drawCircle(Palette5.IcyBlue, 3.2f * d, Offset(base.x - half * d, y + 4f * d))
+        drawCircle(Palette5.IcyBlue, 3.2f * d, Offset(base.x + half * d, y + 4f * d))
+    }
+}
+
+/** Draws two sagging cables between two pylons and returns where a packet can hang on the upper one. */
+private fun DrawScope.cables(a: Offset, b: Offset, d: Float, packetAt: Float): Offset {
+    var spot = Offset.Zero
+    PylonArms.forEachIndexed { level, (dy, half) ->
+        val x0 = if (b.x > a.x) a.x + half * d else a.x - half * d
+        val x1 = if (b.x > a.x) b.x - half * d else b.x + half * d
+        val p0 = Offset(x0, a.y - PYLON_HEIGHT * d + dy * d)
+        val p1 = Offset(x1, b.y - PYLON_HEIGHT * d + dy * d)
+        val ctrl = Offset((p0.x + p1.x) / 2f, (p0.y + p1.y) / 2f + 46f * d)
+        drawPath(
+            Path().apply { moveTo(p0.x, p0.y); quadraticTo(ctrl.x, ctrl.y, p1.x, p1.y) },
+            Palette5.DeepNavy.copy(alpha = 0.8f),
+            style = Stroke(width = 2f * d),
+        )
+        if (level == 0) {
+            val t = packetAt
+            val u = 1f - t
+            val px = u * u * p0.x + 2 * u * t * ctrl.x + t * t * p1.x
+            val py = u * u * p0.y + 2 * u * t * ctrl.y + t * t * p1.y
+            spot = Offset(px, py)
+        }
+    }
+    return spot
+}
+
+/** A little envelope (a data packet) hanging from a cable at [at]. */
+private fun DrawScope.packet(at: Offset, d: Float) {
+    drawLine(Palette5.DeepNavy, at, at + Offset(0f, 7f * d), 1.5f * d)
+    val tl = at + Offset(-9f * d, 7f * d)
+    drawRoundRect(Color.White, tl, Size(18f * d, 12f * d), CornerRadius(2.5f * d))
+    drawPath(
+        Path().apply {
+            moveTo(tl.x + 1.5f * d, tl.y + 1.5f * d)
+            lineTo(tl.x + 9f * d, tl.y + 7f * d)
+            lineTo(tl.x + 16.5f * d, tl.y + 1.5f * d)
+        },
+        Palette5.PersianBlue,
+        style = Stroke(width = 1.6f * d, join = StrokeJoin.Round),
+    )
+}
+
+/** A cell tower with signal arcs. */
+private fun DrawScope.cellTower(base: Offset, k: Float) {
+    val top = base - Offset(0f, 112f * k)
+    val c = Palette5.DuskBlue
+    drawLine(c, base + Offset(-10f * k, 0f), top + Offset(-2f * k, 0f), 3f * k)
+    drawLine(c, base + Offset(10f * k, 0f), top + Offset(2f * k, 0f), 3f * k)
+    for (j in 0 until 4) {
+        val t = (j + 0.5f) / 4f
+        val y = base.y - 112f * k * t
+        val half = (10f - 8f * t) * k
+        drawLine(c, Offset(base.x - half, y), Offset(base.x + half, y), 2f * k)
+    }
+    drawRoundRect(Palette5.PersianBlue, top + Offset(-9f * k, -4f * k), Size(18f * k, 10f * k), CornerRadius(2f * k))
+    drawCircle(PR.Amber, 3f * k, top + Offset(0f, -8f * k))
+    listOf(14f, 24f, 34f).forEach { rr ->
+        val sz = Size(rr * 2 * k, rr * 2 * k)
+        val tl = top - Offset(rr * k, rr * k)
+        drawArc(Palette5.IcyBlue, -50f, 100f, false, tl, sz, style = Stroke(2.5f * k, cap = StrokeCap.Round))
+        drawArc(Palette5.IcyBlue, 130f, 100f, false, tl, sz, style = Stroke(2.5f * k, cap = StrokeCap.Round))
+    }
+}
+
+/** A satellite dish on a stand. */
+private fun DrawScope.dish(base: Offset, k: Float) {
+    drawLine(Palette5.DeepNavy, base, base + Offset(0f, -24f * k), 4f * k)
+    drawRoundRect(Palette5.DeepNavy, base + Offset(-10f * k, -4f * k), Size(20f * k, 5f * k), CornerRadius(2f * k))
+    val c = base + Offset(0f, -38f * k)
+    drawArc(Color.White, 10f, 160f, true, c - Offset(22f * k, 22f * k), Size(44f * k, 44f * k))
+    drawArc(Palette5.DuskBlue, 10f, 160f, false, c - Offset(22f * k, 22f * k), Size(44f * k, 44f * k), style = Stroke(3f * k))
+    drawLine(Palette5.DeepNavy, c, c + Offset(12f * k, -18f * k), 2f * k)
+    drawCircle(PR.Amber, 3.5f * k, c + Offset(12f * k, -18f * k))
+}
+
+/** A data center: a block with rows of blinking server LEDs. */
+private fun DrawScope.dataCenter(base: Offset, bw: Float, bh: Float) {
+    val tl = base - Offset(bw / 2, bh)
+    drawRoundRect(Palette5.PersianBlue, tl, Size(bw, bh), CornerRadius(5f))
+    drawRect(Palette5.DeepNavy, tl, Size(bw, bh * 0.14f))
+    for (row in 0 until 3) {
+        for (col in 0 until 6) {
+            drawCircle(
+                if ((row + col) % 3 == 0) PR.Amber else Palette5.IcyBlue,
+                bw * 0.028f,
+                tl + Offset(bw * (0.16f + col * 0.136f), bh * (0.3f + row * 0.16f)),
+            )
+        }
+    }
+    drawRoundRect(Palette5.DeepNavy, tl + Offset(bw * 0.4f, bh * 0.72f), Size(bw * 0.2f, bh * 0.28f), CornerRadius(3f))
+}
+
+/** An office block with a roof antenna. */
+private fun DrawScope.office(base: Offset, bw: Float, bh: Float) {
+    val tl = base - Offset(bw / 2, bh)
+    drawRoundRect(Palette5.DuskBlue, tl, Size(bw, bh), CornerRadius(3f))
+    for (cx in 0 until 3) for (ry in 0 until 5) {
+        drawRect(Palette5.IcyBlue, tl + Offset(bw * (0.12f + cx * 0.29f), bh * (0.07f + ry * 0.18f)), Size(bw * 0.18f, bh * 0.1f))
+    }
+    drawLine(Palette5.DeepNavy, tl + Offset(bw * 0.5f, 0f), tl + Offset(bw * 0.5f, -14f), 2.5f)
+    drawCircle(PR.Amber, 3f, tl + Offset(bw * 0.5f, -15f))
+}
+
+/** A shop with a striped awning. */
+private fun DrawScope.shop(base: Offset, bw: Float, bh: Float) {
+    val tl = base - Offset(bw / 2, bh)
+    drawRoundRect(BandColor, tl, Size(bw, bh), CornerRadius(3f))
+    val stripes = 5
+    for (s in 0 until stripes) {
+        drawRect(
+            if (s % 2 == 0) Palette5.PersianBlue else Color.White,
+            tl + Offset(bw * s / stripes, 0f),
+            Size(bw / stripes, bh * 0.26f),
+        )
+    }
+    drawRect(Palette5.IcyBlue, tl + Offset(bw * 0.1f, bh * 0.42f), Size(bw * 0.4f, bh * 0.36f))
+    drawRoundRect(Palette5.DuskBlue, tl + Offset(bw * 0.62f, bh * 0.42f), Size(bw * 0.26f, bh * 0.58f), CornerRadius(2f))
+}
+
+/** A small house with a roof. */
+private fun DrawScope.house(base: Offset, bw: Float, bh: Float) {
+    val tl = base - Offset(bw / 2, bh * 0.62f)
+    drawRect(Palette5.IcyBlue, tl, Size(bw, bh * 0.62f))
+    drawPath(
+        Path().apply {
+            moveTo(tl.x - bw * 0.08f, tl.y); lineTo(tl.x + bw / 2, tl.y - bh * 0.42f); lineTo(tl.x + bw * 1.08f, tl.y); close()
+        },
+        Palette5.DuskBlue,
+    )
+    drawRoundRect(Palette5.PersianBlue, tl + Offset(bw * 0.4f, bh * 0.22f), Size(bw * 0.2f, bh * 0.4f), CornerRadius(2f))
+    drawRect(Palette5.Cornflower, tl + Offset(bw * 0.1f, bh * 0.14f), Size(bw * 0.18f, bw * 0.18f))
+    drawRect(Palette5.Cornflower, tl + Offset(bw * 0.72f, bh * 0.14f), Size(bw * 0.18f, bw * 0.18f))
+}
+
+/** Mom's home at the end of the road, with an antenna and a flag. */
+private fun DrawScope.momsHome(base: Offset, k: Float) {
+    house(base, 78f * k, 66f * k)
+    val roof = base + Offset(0f, -66f * k * 0.62f - 66f * k * 0.42f)
+    drawLine(Palette5.DeepNavy, roof, roof + Offset(0f, -26f * k), 3f * k)
+    drawCircle(PR.Amber, 4f * k, roof + Offset(0f, -28f * k))
+    listOf(12f, 22f).forEach { rr ->
+        val tl = roof + Offset(-rr * k, -28f * k - rr * k)
+        val sz = Size(rr * 2 * k, rr * 2 * k)
+        drawArc(Palette5.IcyBlue, -50f, 100f, false, tl, sz, style = Stroke(2.5f * k, cap = StrokeCap.Round))
+        drawArc(Palette5.IcyBlue, 130f, 100f, false, tl, sz, style = Stroke(2.5f * k, cap = StrokeCap.Round))
+    }
 }
 
 private fun DrawScope.lamp(base: Offset, k: Float) {
     drawLine(Palette5.DeepNavy, base, base + Offset(0f, -62f * k), strokeWidth = 4f * k)
     drawRoundRect(Palette5.DeepNavy, base + Offset(-9f * k, -86f * k), Size(18f * k, 26f * k), CornerRadius(4f * k))
     drawRoundRect(Palette5.IcyBlue, base + Offset(-5f * k, -81f * k), Size(10f * k, 16f * k), CornerRadius(3f * k))
-}
-
-private fun DrawScope.building(topLeft: Offset, bw: Float, bh: Float) {
-    drawRoundRect(Palette5.DuskBlue, topLeft, Size(bw, bh), CornerRadius(3f))
-    val cols = 3
-    val rows = 4
-    for (cx in 0 until cols) for (ry in 0 until rows) {
-        drawRect(
-            Palette5.IcyBlue,
-            topLeft + Offset(bw * (0.12f + cx * 0.29f), bh * (0.08f + ry * 0.22f)),
-            Size(bw * 0.18f, bh * 0.12f),
-        )
-    }
 }
 
 // ---------------------------------------------------------------------------
