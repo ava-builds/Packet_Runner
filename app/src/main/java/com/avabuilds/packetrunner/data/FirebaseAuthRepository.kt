@@ -40,14 +40,24 @@ class FirebaseAuthRepository : AuthRepository {
             .addOnFailureListener { onDone(AuthOutcome.Failure(friendlyAuthError(it.code()))) }
     }
 
-    override fun deleteAccount(password: String, onDone: (AuthOutcome) -> Unit) {
+    override fun deleteAccount(
+        password: String,
+        beforeDelete: (uid: String, proceed: (Boolean) -> Unit) -> Unit,
+        onDone: (AuthOutcome) -> Unit,
+    ) {
         val user = auth.currentUser ?: return onDone(AuthOutcome.Failure("You are not logged in."))
         val credential = EmailAuthProvider.getCredential(user.email.orEmpty(), password)
         user.reauthenticate(credential)
             .addOnSuccessListener {
-                user.delete()
-                    .addOnSuccessListener { onDone(AuthOutcome.Success(null)) }
-                    .addOnFailureListener { onDone(AuthOutcome.Failure(friendlyAuthError(it.code()))) }
+                beforeDelete(user.uid) { ok ->
+                    if (!ok) {
+                        onDone(AuthOutcome.Failure("Could not delete your saved town, so the account was kept. Try again."))
+                    } else {
+                        user.delete()
+                            .addOnSuccessListener { onDone(AuthOutcome.Success(null)) }
+                            .addOnFailureListener { onDone(AuthOutcome.Failure(friendlyAuthError(it.code()))) }
+                    }
+                }
             }
             .addOnFailureListener { onDone(AuthOutcome.Failure(friendlyAuthError(it.code()))) }
     }

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.data.AuthOutcome
 import com.avabuilds.packetrunner.data.AuthRepository
 import com.avabuilds.packetrunner.data.AuthValidation
+import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.ui.PR
 import com.avabuilds.packetrunner.ui.Palette5
@@ -34,6 +35,7 @@ import com.avabuilds.packetrunner.ui.SecondaryButton
 fun AccountPanel(
     user: UserProfile,
     auth: AuthRepository,
+    saves: SaveRepository?,
     onUserChanged: (UserProfile) -> Unit,
     onLoggedOut: () -> Unit,
     onClose: () -> Unit,
@@ -80,7 +82,7 @@ fun AccountPanel(
                 PrimaryButton("Delete forever", Modifier.weight(1f)) {
                     if (!busy) {
                         busy = true
-                        auth.deleteAccount(password) { outcome ->
+                        auth.deleteAccount(password, beforeDelete = { uid, proceed -> saves?.delete(uid, proceed) ?: proceed(true) }) { outcome ->
                             busy = false
                             when (outcome) {
                                 is AuthOutcome.Success -> onLoggedOut()

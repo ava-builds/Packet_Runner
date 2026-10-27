@@ -20,8 +20,16 @@ interface AuthRepository {
     fun signOut()
     fun updateNickname(nickname: String, onDone: (AuthOutcome) -> Unit)
 
-    /** Deleting an account needs a recent login, so the password is asked again. */
-    fun deleteAccount(password: String, onDone: (AuthOutcome) -> Unit)
+    /**
+     * Deleting an account needs a recent login, so the password is asked again. Once the password is
+     * right, [beforeDelete] runs (to remove the player's saved data) and says through its callback
+     * whether to go on; only then is the account deleted.
+     */
+    fun deleteAccount(
+        password: String,
+        beforeDelete: (uid: String, proceed: (Boolean) -> Unit) -> Unit,
+        onDone: (AuthOutcome) -> Unit,
+    )
 }
 
 /** Turns a Firebase error code into a sentence a player understands. */

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.data.AuthRepository
+import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.game.BuildingType
 import com.avabuilds.packetrunner.game.FlagOutcome
@@ -24,6 +26,7 @@ import com.avabuilds.packetrunner.game.GameEngine
 import com.avabuilds.packetrunner.game.NetworkMonitor
 import com.avabuilds.packetrunner.game.Neighbors
 import com.avabuilds.packetrunner.game.RequestGenerator
+import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.game.Town
 import com.avabuilds.packetrunner.network.Scenario
 import com.avabuilds.packetrunner.network.Scenarios
@@ -39,6 +42,8 @@ import kotlinx.coroutines.delay
 fun GameScreen(
     user: UserProfile?,
     auth: AuthRepository?,
+    saves: SaveRepository?,
+    initialSave: SaveData?,
     onUserChanged: (UserProfile) -> Unit,
     onLoggedOut: () -> Unit,
     modifier: Modifier = Modifier,
@@ -47,10 +52,13 @@ fun GameScreen(
     val neighbors = remember { Neighbors.default() }
     val generator = remember { RequestGenerator(seed = 2026L) } // fixed seed so every run is the same while we build
     val controller = remember { TownController(town) }
-    var state by remember { mutableStateOf(GameEngine.newGame(neighbors, generator)) }
+    var state by remember {
+        mutableStateOf(if (initialSave != null) GameEngine.restore(initialSave, neighbors, generator) else GameEngine.newGame(neighbors, generator))
+    }
     var showFriends by remember { mutableStateOf(false) }
     var toast by remember { mutableStateOf<String?>(null) }
     var scenario by remember { mutableStateOf<Scenario?>(null) } // the room the player is working in, if any
+    var saveMark by remember { mutableStateOf("") } // cloud mark: ... while saving, a tick when stored, ! when it failed
     var showAccount by remember { mutableStateOf(false) }
     var monitorOpen by remember { mutableStateOf(false) }
     var monitorMessage by remember { mutableStateOf<String?>(null) }
@@ -64,6 +72,15 @@ fun GameScreen(
             // The day clock waits while the player is inside a room, working
             if (scenario == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
             last = now
+        }
+    }
+    // Autosave: whenever something that lasts changes (not the clock), store it a moment later
+    val save by remember { derivedStateOf { SaveData.from(state) } }
+    if (user != null && saves != null) {
+        LaunchedEffect(save) {
+            delay(600)
+            saveMark = "☁…"
+            saves.save(user.uid, save) { ok -> saveMark = if (ok) "☁✓" else "☁!" }
         }
     }
     LaunchedEffect(toast) {
@@ -87,12 +104,12 @@ fun GameScreen(
                 state,
                 onFriends = { showFriends = !showFriends },
                 onSkipDay = { state = GameEngine.skipToEvening(state) },
-                playerName = user?.nickname,
+                playerName = user?.let { "${it.nickname} $saveMark".trim() },
                 onAccount = { showAccount = !showAccount },
             )
             toast?.let { Text(it, fontSize = 13.sp, color = PR.Green800, modifier = Modifier.padding(top = 6.dp)) }
             if (showAccount && user != null && auth != null) {
-                AccountPanel(user, auth, onUserChanged, onLoggedOut, onClose = { showAccount = false }, modifier = Modifier.padding(top = 8.dp))
+                AccountPanel(user, auth, saves, onUserChanged, onLoggedOut, onClose = { showAccount = false }, modifier = Modifier.padding(top = 8.dp))
             }
             if (showFriends) FriendsPanel(neighbors, state, Modifier.padding(top = 8.dp))
         }

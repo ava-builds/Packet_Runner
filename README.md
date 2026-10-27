@@ -18,6 +18,15 @@ The app builds without Firebase and then shows "Firebase is not set up yet". To 
 4. In the console open **Build → Authentication → Get started → Sign-in method** and switch on **Email/Password**.
 5. Run the app again. Sign up, log in, change your nickname, log out, and delete the account from the 👤 pill.
 
+## Saving the game (Firestore)
+
+Your day, money, friendship, built networks and solved jobs are saved to Firestore under `players/{your uid}` a moment after they change
+(look for the cloud mark next to your nickname: `...` saving, a tick saved, `!` failed). To turn it on:
+
+1. In the Firebase console open **Build → Firestore Database → Create database** (production mode is fine, pick a nearby region).
+2. Open the **Rules** tab, paste the contents of `firestore.rules` from this repo, and press **Publish**.
+3. Run the app, log in, play a little, and check **Firestore Database → Data → players** for your document.
+
 ## Tests
 
 ```

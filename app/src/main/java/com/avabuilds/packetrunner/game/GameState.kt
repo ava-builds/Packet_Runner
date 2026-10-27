@@ -7,6 +7,9 @@ const val FAIL_PENALTY = 50
 /** How long the phone rings (in game minutes) before the call is missed. */
 const val RING_TIMEOUT_MINUTES = 120f
 
+/** A job the player finished, kept for the save file and later for the notebook. */
+data class SolvedRecord(val day: Int, val type: RequestType, val buildingId: String, val payout: Int)
+
 /**
  * Everything that changes while you play. It is immutable: [GameEngine] returns a new state
  * for every event, which keeps the rules easy to test and easy to save later.
@@ -34,6 +37,8 @@ data class GameState(
     val todayCaught: Int = 0,
     val todayFalseAlarms: Int = 0,
     val todayBonus: Int = 0,
+    /** Every job solved so far, oldest first. */
+    val solved: List<SolvedRecord> = emptyList(),
 ) {
     val dayOver: Boolean get() = minute >= Clock.DAY_END
 }
@@ -101,6 +106,7 @@ object GameEngine {
                 connected = if (job.type == RequestType.INSTALL) state.connected + job.neighborId else state.connected,
                 todayEarned = state.todayEarned + pay,
                 todaySolved = state.todaySolved + 1,
+                solved = state.solved + SolvedRecord(state.day, job.type, job.buildingId, pay),
             )
         } else {
             changeHearts(state, job.neighborId, -1).copy(
@@ -109,6 +115,23 @@ object GameEngine {
                 todayFailed = state.todayFailed + 1,
             )
         }
+    }
+
+    /**
+     * Brings a saved game back. The day starts again at 08:00 with that day's calls, because the
+     * save only keeps what lasts (day, money, friendship, networks, solved jobs).
+     */
+    fun restore(save: SaveData, neighbors: List<Neighbor>, generator: RequestGenerator): GameState {
+        val clean = save.sanitized(neighbors)
+        return GameState(
+            day = clean.day,
+            minute = Clock.DAY_START,
+            money = clean.money,
+            hearts = neighbors.associate { it.id to (clean.hearts[it.id] ?: 0) },
+            connected = clean.connected,
+            upcoming = generator.callsFor(clean.day, neighbors, clean.connected),
+            solved = clean.solved,
+        )
     }
 
     /** Developer shortcut: jumps to 20:00 so the end of the day (and the next day) can be tried quickly. */
