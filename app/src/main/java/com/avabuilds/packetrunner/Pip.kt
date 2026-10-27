@@ -12,24 +12,34 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-val PipGreen = Color(0xFF5DCAA5)
-val PipDark = Color(0xFF0F6E56)
-val PipEye = Color(0xFF04342C)
+private val PipGreen = Color(0xFF5DCAA5)
+private val PipDark = Color(0xFF0F6E56)
+private val PipEye = Color(0xFF04342C)
 
+/** Pip, the hero packet. Bounces and blinks when [animated] is true. */
 @Composable
-fun Pip(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(160.dp, 140.dp)) {
-        val u = size.width / 80f
+fun Pip(modifier: Modifier = Modifier, size: Dp = 120.dp, animated: Boolean = true) {
+    val blink = if (animated) rememberBlink(3200) else 1f
+    val bounce = if (animated) rememberWave(3f, 650) else 0f
+
+    Canvas(
+        modifier
+            .size(size, size * 0.875f)
+            .graphicsLayer { translationY = bounce * density }
+    ) {
+        val u = this.size.width / 80f
 
         // Body
         drawRoundRect(
             color = PipGreen,
             topLeft = Offset(10 * u, 10 * u),
             size = Size(60 * u, 50 * u),
-            cornerRadius = CornerRadius(16 * u)
+            cornerRadius = CornerRadius(16 * u),
         )
 
         // Envelope flap
@@ -38,23 +48,28 @@ fun Pip(modifier: Modifier = Modifier) {
             lineTo(40 * u, 34 * u)
             lineTo(66 * u, 18 * u)
         }
-        drawPath(
-            flap, PipDark,
-            style = Stroke(width = 2.5f * u, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        )
+        drawPath(flap, PipDark, style = Stroke(2.5f * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
 
-        // Eyes
+        // Eyes (squashed vertically when blinking)
         for (x in listOf(30f, 50f)) {
-            drawCircle(Color.White, radius = 6 * u, center = Offset(x * u, 45 * u))
-            drawCircle(PipEye, radius = 3 * u, center = Offset(x * u, 45 * u))
+            drawOval(
+                Color.White,
+                topLeft = Offset((x - 6) * u, (45 - 6 * blink) * u),
+                size = Size(12 * u, 12 * u * blink),
+            )
+            drawOval(
+                PipEye,
+                topLeft = Offset((x - 3) * u, (45 - 3 * blink) * u),
+                size = Size(6 * u, 6 * u * blink),
+            )
         }
 
         // Smile
         val smile = Path().apply {
             moveTo(35 * u, 54 * u)
-            quadraticBezierTo(40 * u, 58 * u, 45 * u, 54 * u)
+            quadraticTo(40 * u, 58 * u, 45 * u, 54 * u)
         }
-        drawPath(smile, PipEye, style = Stroke(width = 1.8f * u, cap = StrokeCap.Round))
+        drawPath(smile, PipEye, style = Stroke(1.8f * u, cap = StrokeCap.Round))
     }
 }
 

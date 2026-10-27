@@ -16,8 +16,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PacketRunnerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Pip(modifier = Modifier.padding(innerPadding))
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    containerColor = PR.Bg,
+                ) { innerPadding ->
+                    PacketRunnerApp(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
