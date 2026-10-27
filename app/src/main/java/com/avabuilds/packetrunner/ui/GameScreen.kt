@@ -1,0 +1,169 @@
+package com.avabuilds.packetrunner.ui
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.avabuilds.packetrunner.game.BuildingType
+import com.avabuilds.packetrunner.game.FlagOutcome
+import com.avabuilds.packetrunner.game.GameEngine
+import com.avabuilds.packetrunner.game.NetworkMonitor
+import com.avabuilds.packetrunner.game.Neighbors
+import com.avabuilds.packetrunner.game.RequestGenerator
+import com.avabuilds.packetrunner.game.Town
+import com.avabuilds.packetrunner.network.Scenario
+import com.avabuilds.packetrunner.network.Scenarios
+import com.avabuilds.packetrunner.ui.scene.SceneScreen
+import kotlinx.coroutines.delay
+
+/**
+ * The whole game screen: the town, plus the day clock, the ringing phone and the job cards on top.
+ * All the rules live in [GameEngine]; this screen shows the state and sends the player's choices to it.
+ */
+@Composable
+fun GameScreen(modifier: Modifier = Modifier) {
+    val town = remember { Town.default() }
+    val neighbors = remember { Neighbors.default() }
+    val generator = remember { RequestGenerator(seed = 2026L) } // fixed seed so every run is the same while we build
+    val controller = remember { TownController(town) }
+    var state by remember { mutableStateOf(GameEngine.newGame(neighbors, generator)) }
+    var showFriends by remember { mutableStateOf(false) }
+    var toast by remember { mutableStateOf<String?>(null) }
+    var scenario by remember { mutableStateOf<Scenario?>(null) } // the room the player is working in, if any
+    var monitorOpen by remember { mutableStateOf(false) }
+    var monitorMessage by remember { mutableStateOf<String?>(null) }
+
+    // The clock: time moves forward in small steps, measured against the real clock
+    LaunchedEffect(Unit) {
+        var last = System.nanoTime()
+        while (true) {
+            delay(200)
+            val now = System.nanoTime()
+            // The day clock waits while the player is inside a room, working
+            if (scenario == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
+            last = now
+        }
+    }
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            delay(2600)
+            toast = null
+        }
+    }
+
+    val active = state.active
+    val ringing = state.ringing
+    val atTarget = active != null && controller.arrivedAt?.id == active.buildingId
+
+    Box(modifier.fillMaxSize()) {
+        IsoTownScreen(controller, targetBuildingId = active?.buildingId)
+
+        // Top strip: title, day, money and friends
+        Column(Modifier.align(Alignment.TopStart).padding(12.dp)) {
+            Text("Network Town", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = PR.Ink)
+            StatusPills(state, onFriends = { showFriends = !showFriends }, onSkipDay = { state = GameEngine.skipToEvening(state) })
+            toast?.let { Text(it, fontSize = 13.sp, color = PR.Green800, modifier = Modifier.padding(top = 6.dp)) }
+            if (showFriends) FriendsPanel(neighbors, state, Modifier.padding(top = 8.dp))
+        }
+
+        // Bottom: the ringing phone, or the job in progress
+        Column(Modifier.align(Alignment.BottomCenter).padding(16.dp)) {
+            if (ringing != null) {
+                val neighbor = neighbors.first { it.id == ringing.neighborId }
+                CallBubble(
+                    request = ringing,
+                    neighbor = neighbor,
+                    hearts = state.hearts[neighbor.id] ?: 0,
+                    onAnswer = {
+                        state = GameEngine.answer(state)
+                        controller.walkToDoorOf(town.building(ringing.buildingId))
+                    },
+                    onIgnore = { state = GameEngine.ignore(state) },
+                )
+            } else if (monitorOpen) {
+                // the monitor sits above the town; nothing else is needed down here
+            } else if (active == null && controller.arrivedAt?.type == BuildingType.OFFICE) {
+                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null })
+            } else if (active != null) {
+                val neighbor = neighbors.first { it.id == active.neighborId }
+                val building = town.building(active.buildingId)
+                if (atTarget) {
+                    ArrivalCard(
+                        request = active,
+                        neighbor = neighbor,
+                        building = building,
+                        onStart = { scenario = Scenarios.forRequest(active) },
+                        onGiveUp = {
+                            toast = "${neighbor.name} is unhappy. −₩50"
+                            state = GameEngine.complete(state, solved = false)
+                        },
+                    )
+                } else {
+                    JobBanner(active, neighbor, building)
+                }
+            }
+        }
+
+        // The Network Monitor stays open while the clock runs, so problems can show up in front of the player
+        if (monitorOpen && !state.dayOver) {
+            NetworkMonitorPanel(
+                state = state,
+                neighbors = neighbors,
+                message = monitorMessage,
+                onReport = { neighbor ->
+                    val result = NetworkMonitor.report(state, neighbor)
+                    state = result.state
+                    monitorMessage = when (result.outcome) {
+                        FlagOutcome.EARLY_CATCH -> "Caught it early! ${neighbor.name} hasn't even noticed yet. +₩${result.bonus}"
+                        FlagOutcome.ALREADY_REPORTED -> "You already reported ${neighbor.name}'s problem. Now be ready to fix it."
+                        FlagOutcome.TOO_LATE -> "Too late, ${neighbor.name} already knows about the problem."
+                        FlagOutcome.FALSE_ALARM -> "False alarm: ${neighbor.name}'s link is fine. −₩${NetworkMonitor.FALSE_ALARM_COST}"
+                        FlagOutcome.NO_LINK -> "${neighbor.name} has no network yet, so there is nothing to watch."
+                    }
+                },
+                onClose = { monitorOpen = false },
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp, start = 12.dp, end = 12.dp),
+            )
+        }
+
+        // The room: the player works on the network here, and the clock waits
+        val room = scenario
+        if (room != null && active != null) {
+            val neighbor = neighbors.first { it.id == active.neighborId }
+            SceneScreen(
+                scenario = room,
+                neighborName = neighbor.name,
+                reward = active.reward,
+                onFinish = { success, payout, stars ->
+                    scenario = null
+                    if (success) {
+                        toast = "+₩$payout · ${"★".repeat(stars)} · ${neighbor.name} is happier"
+                        state = GameEngine.complete(state, solved = true, payout = payout, bonusHearts = if (stars == 3) 1 else 0)
+                    } else {
+                        toast = "${neighbor.name} is unhappy. −₩50"
+                        state = GameEngine.complete(state, solved = false)
+                    }
+                },
+            )
+        }
+
+        if (state.dayOver) {
+            DayEndCard(state, onNextDay = {
+                controller.teleportTo(town.start) // every morning starts at the office
+                state = GameEngine.nextDay(state, neighbors, generator)
+            })
+        }
+    }
+}

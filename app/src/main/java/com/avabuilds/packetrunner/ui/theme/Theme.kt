@@ -4,7 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import com.avabuilds.packetrunner.Palette5
+import com.avabuilds.packetrunner.ui.Palette5
 
 /** One scheme for light and dark: the game's own backgrounds are always the palette's blues. */
 private val AppColorScheme = lightColorScheme(
