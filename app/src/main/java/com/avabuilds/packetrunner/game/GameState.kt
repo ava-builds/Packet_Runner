@@ -37,6 +37,8 @@ data class GameState(
     val todayCaught: Int = 0,
     val todayFalseAlarms: Int = 0,
     val todayBonus: Int = 0,
+    /** Lab games already played for pay today (each pays once a day). */
+    val labDone: Set<String> = emptySet(),
     /** Every job solved so far, oldest first. */
     val solved: List<SolvedRecord> = emptyList(),
 ) {
@@ -134,6 +136,16 @@ object GameEngine {
         )
     }
 
+    /** The player finished a Lab game. It pays once per day per game; playing again is just practice. */
+    fun completeLab(state: GameState, gameId: String, reward: Int): GameState {
+        if (gameId in state.labDone) return state
+        return state.copy(
+            money = state.money + reward,
+            todayEarned = state.todayEarned + reward,
+            labDone = state.labDone + gameId,
+        )
+    }
+
     /** Developer shortcut: jumps to 20:00 so the end of the day (and the next day) can be tried quickly. */
     fun skipToEvening(state: GameState): GameState =
         advance(state, (Clock.DAY_END - state.minute) / Clock.MINUTES_PER_SECOND + 1f)
@@ -152,6 +164,7 @@ object GameEngine {
             todayMissed = 0,
             todayFailed = 0,
             caught = emptySet(),
+            labDone = emptySet(),
             todayCaught = 0,
             todayFalseAlarms = 0,
             todayBonus = 0,

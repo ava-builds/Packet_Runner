@@ -11,7 +11,7 @@ Kotlin, Jetpack Compose. Packages: `game` (grid, pathfinding, requests, day cloc
 ## What is in the town so far
 
 Office (Network Monitor), houses (install a router), the cafe (hidden node, RTS/CTS), IP address jobs (DHCP pool and lease),
-and City Hall (fix a router's forwarding table by setting subnet masks, longest prefix match). More jobs are planned.
+and City Hall (fix a router's forwarding table by setting subnet masks, longest prefix match). The office also has a Lab with three mini-games (CRC error detection, line encoding, sliding window) that pay once a day. More jobs are planned.
 
 ## Firebase setup (needed for log in)
 

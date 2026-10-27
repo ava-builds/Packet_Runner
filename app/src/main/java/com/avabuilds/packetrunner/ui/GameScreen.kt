@@ -33,11 +33,17 @@ import com.avabuilds.packetrunner.game.RequestType
 import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.game.Town
 import com.avabuilds.packetrunner.network.Concept
+import com.avabuilds.packetrunner.network.LabGame
 import com.avabuilds.packetrunner.network.RoutingPuzzle
 import com.avabuilds.packetrunner.network.RoutingPuzzles
 import com.avabuilds.packetrunner.network.Scenario
 import com.avabuilds.packetrunner.network.Scenarios
 import com.avabuilds.packetrunner.ui.auth.AccountPanel
+import com.avabuilds.packetrunner.ui.lab.CrcGame
+import com.avabuilds.packetrunner.ui.lab.EncodingGame
+import com.avabuilds.packetrunner.ui.lab.LabGameShell
+import com.avabuilds.packetrunner.ui.lab.LabMenu
+import com.avabuilds.packetrunner.ui.lab.WindowGame
 import com.avabuilds.packetrunner.ui.notebook.NotebookPanel
 import com.avabuilds.packetrunner.ui.scene.RoutingScreen
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
@@ -75,6 +81,8 @@ fun GameScreen(
     var showNotebook by remember { mutableStateOf(false) }
     var showAccount by remember { mutableStateOf(false) }
     var routing by remember { mutableStateOf<RoutingPuzzle?>(null) } // the City Hall router job, if open
+    var labMenuOpen by remember { mutableStateOf(false) }
+    var labGame by remember { mutableStateOf<LabGame?>(null) }
     var monitorOpen by remember { mutableStateOf(false) }
     var monitorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -85,7 +93,7 @@ fun GameScreen(
             delay(200)
             val now = System.nanoTime()
             // The day clock waits while the player is inside a room, working
-            if (scenario == null && routing == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
+            if (scenario == null && routing == null && !labMenuOpen && labGame == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
             last = now
         }
     }
@@ -153,7 +161,7 @@ fun GameScreen(
             } else if (monitorOpen) {
                 // the monitor sits above the town; nothing else is needed down here
             } else if (active == null && controller.arrivedAt?.type == BuildingType.OFFICE) {
-                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null })
+                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null }, onOpenLab = { labMenuOpen = true })
             } else if (active != null) {
                 val neighbor = neighbors.first { it.id == active.neighborId }
                 val building = town.building(active.buildingId)
@@ -232,6 +240,33 @@ fun GameScreen(
                     }
                 },
             )
+        }
+
+        // The Lab: a menu of three small games; the clock waits while the player is in it
+        val playing = labGame
+        if (playing != null) {
+            val paysToday = playing.id !in state.labDone
+            LabGameShell(
+                game = playing,
+                paysToday = paysToday,
+                onQuit = { labGame = null },
+                onFinish = {
+                    if (paysToday) {
+                        state = GameEngine.completeLab(state, playing.id, playing.reward)
+                        toast = "+₩${playing.reward} from the Lab"
+                    }
+                    labGame = null
+                },
+                onSaveToNotebook = { title, concepts -> saveConceptsAsNote(title, concepts) },
+            ) { onSuccess ->
+                when (playing) {
+                    LabGame.CRC -> CrcGame(onSuccess)
+                    LabGame.ENCODING -> EncodingGame(onSuccess)
+                    LabGame.WINDOW -> WindowGame(onSuccess)
+                }
+            }
+        } else if (labMenuOpen) {
+            LabMenu(doneToday = state.labDone, onPick = { labGame = it }, onClose = { labMenuOpen = false })
         }
 
         val puzzle = routing

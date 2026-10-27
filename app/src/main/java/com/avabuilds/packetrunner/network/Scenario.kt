@@ -178,6 +178,21 @@ object Concepts {
         "The row 0.0.0.0/0 matches every address. Packets that match nothing else leave through it, usually towards the Internet.",
         "Internetworking · IP forwarding and routing",
     )
+    val CRC = Concept(
+        "CRC (cyclic redundancy check)", "CRC (순환 중복 검사)",
+        "The sender divides its data by an agreed generator and adds the remainder to the frame. The receiver divides the whole frame: a remainder of zero means no error was found.",
+        "Getting Connected · Error detection (CRC)",
+    )
+    val LINE_ENCODING = Concept(
+        "Line encoding (NRZ, NRZI, Manchester)", "선로 부호화 (NRZ, NRZI, 맨체스터)",
+        "Bits must become signal levels. NRZ is simple but long runs of equal bits lose the clock. NRZI and Manchester add changes so the receiver can keep in step.",
+        "Getting Connected · Encoding",
+    )
+    val SLIDING_WINDOW = Concept(
+        "Sliding window", "슬라이딩 윈도우",
+        "The sender may have a window of frames in flight before the first acknowledgement returns. A window as large as the delay times the bandwidth keeps the pipe full.",
+        "Getting Connected · Reliable transmission (sliding window)",
+    )
     val ACCESS_POINT = Concept(
         "Access point", "액세스 포인트 (AP)",
         "An access point adds Wi-Fi to a wired network. It needs a cable to the router, and it does not hand out IP addresses itself.",
@@ -191,7 +206,7 @@ val Concepts.all: List<Concept>
         Concepts.ROUTER, Concepts.CABLE, Concepts.WIFI_RANGE, Concepts.BANDWIDTH_LATENCY, Concepts.HIDDEN_NODE,
         Concepts.RTS_CTS, Concepts.COLLISION_AVOIDANCE, Concepts.APP_NEEDS, Concepts.REPEATER, Concepts.DHCP_POOL,
         Concepts.DHCP_LEASE, Concepts.ACCESS_POINT, Concepts.FORWARDING_TABLE, Concepts.SUBNET_MASK,
-        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE,
+        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW,
     )
 
 object Scenarios {

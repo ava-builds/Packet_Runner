@@ -41,6 +41,8 @@ fun ConceptCardView(
     payout: Int,
     onSaveToNotebook: (() -> Unit)?,
     onContinue: () -> Unit,
+    /** Replaces the payout line (for jobs that do not work like a customer paying). With stars = 0 the star row is hidden. */
+    summary: String? = null,
 ) {
     var saved by remember { mutableStateOf(false) }
     Box(
@@ -49,7 +51,7 @@ fun ConceptCardView(
     ) {
         Panel(Modifier.padding(20.dp), color = PR.White, borderColor = Palette5.PersianBlue) {
             Text("What you just did", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = PR.Ink)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (stars > 0) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StarRow(stars, size = 22)
                 Text(
                     when (stars) {
@@ -76,7 +78,7 @@ fun ConceptCardView(
                 }
             }
             Text(
-                "Customer pays ₩$reward − materials ₩$spent" + (if (tip > 0) " + tip ₩$tip" else "") + " = ₩$payout",
+                summary ?: ("Customer pays ₩$reward − materials ₩$spent" + (if (tip > 0) " + tip ₩$tip" else "") + " = ₩$payout"),
                 fontSize = 13.sp, fontWeight = FontWeight.Medium, color = PR.Ink,
             )
             if (onSaveToNotebook != null) {

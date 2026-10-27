@@ -166,3 +166,31 @@ class GameEngineTest {
         assertEquals(1, evening.todayFailed)
     }
 }
+
+class LabEngineTest {
+    private val neighbors = Neighbors.default()
+    private val generator = RequestGenerator(2026L)
+
+    @Test fun aLabGamePaysOncePerDay() {
+        val s = GameEngine.newGame(neighbors, generator)
+        val once = GameEngine.completeLab(s, "crc", 60)
+        assertEquals(s.money + 60, once.money)
+        assertEquals(60, once.todayEarned)
+        val twice = GameEngine.completeLab(once, "crc", 60)
+        assertEquals(once, twice)
+    }
+
+    @Test fun differentLabGamesEachPayOnce() {
+        var s = GameEngine.newGame(neighbors, generator)
+        s = GameEngine.completeLab(s, "crc", 60)
+        s = GameEngine.completeLab(s, "window", 50)
+        assertEquals(START_MONEY + 110, s.money)
+    }
+
+    @Test fun theNextMorningTheLabPaysAgain() {
+        val s = GameEngine.completeLab(GameEngine.newGame(neighbors, generator), "crc", 60)
+        val next = GameEngine.nextDay(s, neighbors, generator)
+        assertTrue(next.labDone.isEmpty())
+        assertEquals(s.money + 60, GameEngine.completeLab(next, "crc", 60).money)
+    }
+}
