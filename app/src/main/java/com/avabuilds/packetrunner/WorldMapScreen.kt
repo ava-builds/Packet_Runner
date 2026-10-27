@@ -58,10 +58,10 @@ val Worlds = listOf(
 
 // Layout of the infographic, in dp
 private val HeaderHeight = 200.dp
-private val SectionHeight = 250.dp
+private val SectionHeight = 176.dp
 private val FooterHeight = 200.dp
-private val RoadWidth = 96.dp
-private val BandHeight = 112.dp
+private val RoadWidth = 80.dp
+private val BandHeight = 104.dp
 
 // Colors, mapped from the poster's structure onto the app palette
 /** Background of the whole screen while the map is showing, status bar areas included. */
@@ -111,7 +111,7 @@ fun WorldMapScreen(worldStars: Map<Int, Int>, onPlayWorld: (Int) -> Unit) {
                     Box(
                         Modifier.offset(
                             x = if (i % 2 == 0) width * 0.05f + 4.dp else width * 0.95f - 60.dp,
-                            y = centerY - BandHeight / 2 - 34.dp,
+                            y = centerY - BandHeight / 2 - 30.dp,
                         ),
                     ) { Pip(size = 56.dp) }
                 }
@@ -231,11 +231,15 @@ private fun DrawScope.drawWorld(sections: Int) {
     val xL = w * 0.20f
     fun cy(i: Int) = header + sec * i + sec / 2
 
+    // The scenery was designed for a 126dp gap between bands; scale it to the real gap.
+    val gap = (SectionHeight - BandHeight).value * d
+    val sd = d * (gap / (126f * d))
+    val feet = gap / 2 - 5f * d // where objects stand, below the center of a gap
+
     // Clouds
     cloud(Offset(w * 0.56f, header * 0.14f), 40f * d)
     cloud(Offset(w * 0.72f, header * 0.95f), 40f * d)
-    cloud(Offset(w * 0.04f, header + sec * 2.0f), 38f * d)
-    cloud(Offset(w * 0.95f, header + sec * 3.0f), 38f * d)
+    cloud(Offset(w * 0.86f, header + sec * sections + 30f * d), 36f * d)
 
     // Road: left-to-right on even sections, right-to-left on odd, joined by U-turns
     val road = Path().apply {
@@ -264,34 +268,34 @@ private fun DrawScope.drawWorld(sections: Int) {
 
     // Pylons carry two cables down the page, with data packets riding on them
     val pylons = buildList {
-        add(Offset(w * 0.88f, header + 60f * d))
+        add(Offset(w * 0.88f, header + gap / 2 - 2f * d))
         for (i in 0 until sections - 1) {
-            add(Offset(if (i % 2 == 0) w * 0.10f else w * 0.90f, header + sec * (i + 1) + 58f * d))
+            add(Offset(if (i % 2 == 0) w * 0.10f else w * 0.90f, header + sec * (i + 1) + feet))
         }
         add(Offset(w * 0.10f, header + sec * sections + 90f * d))
     }
-    val packetSpots = pylons.zipWithNext().map { (a, b) -> cables(a, b, d, packetAt = 0.16f) }
-    pylons.forEach { pylon(it, d) }
+    val packetSpots = pylons.zipWithNext().map { (a, b) -> cables(a, b, sd, packetAt = 0.14f) }
+    pylons.forEach { pylon(it, sd) }
 
     // The town in the free corners between bands (the gap is about 126dp tall, centered on y)
     for (i in 0 until sections - 1) {
-        val y = header + sec * (i + 1) + 58f * d
+        val y = header + sec * (i + 1) + feet
         val mirror = i % 2 != 0
         fun x(frac: Float) = if (mirror) w * (1f - frac) else w * frac
         if (!mirror) {
-            cellTower(Offset(x(0.26f), y), 0.72f * d)
-            office(Offset(x(0.40f), y), 34f * d, 70f * d)
-            shop(Offset(x(0.54f), y), 52f * d, 42f * d)
+            cellTower(Offset(x(0.26f), y), 0.72f * sd)
+            office(Offset(x(0.40f), y), 34f * sd, 70f * sd)
+            shop(Offset(x(0.54f), y), 52f * sd, 42f * sd)
         } else {
-            dataCenter(Offset(x(0.28f), y), 70f * d, 60f * d)
-            house(Offset(x(0.45f), y), 46f * d, 40f * d)
-            dish(Offset(x(0.56f), y), d)
+            dataCenter(Offset(x(0.28f), y), 70f * sd, 60f * sd)
+            house(Offset(x(0.45f), y), 46f * sd, 40f * sd)
+            dish(Offset(x(0.56f), y), sd)
         }
-        lamp(Offset(x(0.66f), y), d)
+        lamp(Offset(x(0.66f), y), sd)
     }
 
     // Packets go on last so no building covers them
-    packetSpots.forEach { packet(it, d) }
+    packetSpots.forEach { packet(it, sd) }
 
     // Mom's home at the end of the road, with an antenna
     momsHome(Offset(w * 0.52f, header + sec * sections + 92f * d), d)
