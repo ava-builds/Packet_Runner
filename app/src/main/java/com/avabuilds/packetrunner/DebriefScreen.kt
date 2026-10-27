@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DebriefScreen(result: LevelResult, onRetry: () -> Unit, onMap: () -> Unit) {
+fun DebriefScreen(result: LevelResult, whatReallyHappened: String, onRetry: () -> Unit, onMap: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -39,7 +39,7 @@ fun DebriefScreen(result: LevelResult, onRetry: () -> Unit, onMap: () -> Unit) {
 
         Panel {
             Text("What really happened", fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text(RouterStationLevel.WHAT_REALLY_HAPPENED, fontSize = 14.sp, lineHeight = 21.sp, color = PR.Muted)
+            Text(whatReallyHappened, fontSize = 14.sp, lineHeight = 21.sp, color = PR.Muted)
         }
 
         if (result.mistakes.isNotEmpty()) {

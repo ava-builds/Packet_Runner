@@ -39,11 +39,11 @@ data class WorldInfo(
 )
 
 val Worlds = listOf(
-    WorldInfo(1, "📶", "Wi-Fi fog", "무선 LAN · RTS/CTS", playable = false),
-    WorldInfo(2, "🔀", "Switch city", "패킷 스위칭 · bridge", playable = false),
+    WorldInfo(1, "📶", "Wi-Fi fog", "무선 LAN · RTS/CTS", playable = true),
+    WorldInfo(2, "🔀", "Switch city", "패킷 스위칭 · bridge", playable = true),
     WorldInfo(3, "🚉", "Router station", "인터넷 · IP forwarding", playable = true),
-    WorldInfo(4, "🏠", "Mom moved!", "Mobile IP · tunneling", playable = false),
-    WorldInfo(5, "📱", "Mom's phone", "트랜스포트 · TCP/UDP", playable = false),
+    WorldInfo(4, "🏠", "Mom moved!", "Mobile IP · tunneling", playable = true),
+    WorldInfo(5, "📱", "Mom's phone", "트랜스포트 · TCP/UDP", playable = true),
 )
 
 private const val LEFT = 0.22f
@@ -68,12 +68,14 @@ fun WorldMapScreen(worldStars: Map<Int, Int>, onPlayWorld: (Int) -> Unit) {
 
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val sidePad = maxWidth * LEFT - 36.dp
+            val pipWorld = Worlds.firstOrNull { (worldStars[it.number] ?: 0) == 0 }?.number
             Column {
                 Worlds.forEachIndexed { index, world ->
                     val onLeft = index % 2 == 0
                     WorldNode(
                         world = world,
                         stars = worldStars[world.number] ?: 0,
+                        pipHere = world.number == pipWorld,
                         onLeft = onLeft,
                         modifier = if (onLeft) Modifier.padding(start = sidePad) else Modifier.padding(end = sidePad),
                         onClick = { if (world.playable) onPlayWorld(world.number) },
@@ -87,7 +89,7 @@ fun WorldMapScreen(worldStars: Map<Int, Int>, onPlayWorld: (Int) -> Unit) {
 
         Spacer(Modifier.height(20.dp))
         Text(
-            "More worlds unlock as Pip's journey is built.",
+            "Earn stars in every world to bring Pip home to Mom!",
             fontSize = 12.sp,
             color = PR.Muted,
             textAlign = TextAlign.Center,
@@ -100,6 +102,7 @@ fun WorldMapScreen(worldStars: Map<Int, Int>, onPlayWorld: (Int) -> Unit) {
 private fun WorldNode(
     world: WorldInfo,
     stars: Int,
+    pipHere: Boolean,
     onLeft: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
@@ -143,7 +146,7 @@ private fun WorldNode(
                 world.playable -> Text("Play now", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PR.Purple800)
                 else -> Text("Coming soon", fontSize = 12.sp, color = PR.Muted)
             }
-            if (world.playable) Pip(size = 40.dp)
+            if (pipHere) Pip(size = 40.dp)
         }
     }
 

@@ -17,9 +17,9 @@ import androidx.compose.ui.Modifier
 /** Which screen is showing. */
 sealed interface Screen {
     data object Map : Screen
-    data object Briefing : Screen
-    data object Play : Screen
-    data class Debrief(val result: LevelResult) : Screen
+    data class Briefing(val world: Int) : Screen
+    data class Play(val world: Int) : Screen
+    data class Debrief(val world: Int, val result: LevelResult) : Screen
 }
 
 @Composable
@@ -35,31 +35,43 @@ fun PacketRunnerApp(modifier: Modifier = Modifier) {
             when (val current = screen) {
                 Screen.Map -> WorldMapScreen(
                     worldStars = worldStars,
-                    onPlayWorld = { screen = Screen.Briefing },
+                    onPlayWorld = { screen = Screen.Briefing(it) },
                 )
 
-                Screen.Briefing -> BriefingScreen(
-                    briefing = RouterStationLevel.briefing,
-                    onStart = { screen = Screen.Play },
+                is Screen.Briefing -> BriefingScreen(
+                    briefing = briefingFor(current.world),
+                    onStart = { screen = Screen.Play(current.world) },
                     onBack = { screen = Screen.Map },
                 )
 
-                Screen.Play -> RouterStationScreen(
-                    onFinish = { result ->
+                is Screen.Play -> {
+                    val onFinish = { result: LevelResult ->
                         if (result.cleared) {
-                            worldStars[3] = maxOf(worldStars[3] ?: 0, result.stars)
+                            worldStars[current.world] = maxOf(worldStars[current.world] ?: 0, result.stars)
                         }
-                        screen = Screen.Debrief(result)
-                    },
-                    onQuit = { screen = Screen.Map },
-                )
+                        screen = Screen.Debrief(current.world, result)
+                    }
+                    val quiz = QuizLevels[current.world]
+                    if (quiz != null) {
+                        QuizScreen(level = quiz, onFinish = onFinish, onQuit = { screen = Screen.Map })
+                    } else {
+                        RouterStationScreen(onFinish = onFinish, onQuit = { screen = Screen.Map })
+                    }
+                }
 
                 is Screen.Debrief -> DebriefScreen(
                     result = current.result,
-                    onRetry = { screen = Screen.Play },
+                    whatReallyHappened = whatReallyHappenedFor(current.world),
+                    onRetry = { screen = Screen.Play(current.world) },
                     onMap = { screen = Screen.Map },
                 )
             }
         }
     }
 }
+
+private fun briefingFor(world: Int): Briefing =
+    QuizLevels[world]?.briefing ?: RouterStationLevel.briefing
+
+private fun whatReallyHappenedFor(world: Int): String =
+    QuizLevels[world]?.whatReallyHappened ?: RouterStationLevel.WHAT_REALLY_HAPPENED
