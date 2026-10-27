@@ -32,6 +32,7 @@ class CanvasSpriteProvider : SpriteProvider {
                 SpriteKey.OFFICE -> drawOffice(sprite)
                 SpriteKey.HOUSE -> drawHouse(sprite)
                 SpriteKey.CAFE -> drawCafe(sprite)
+                SpriteKey.CITY_HALL -> drawCityHall(sprite)
                 SpriteKey.PLAYER -> drawPlayer(sprite.anchor, tw)
             }
         }
@@ -185,4 +186,30 @@ private fun DrawScope.drawCafe(sprite: Sprite) {
     drawCircle(Color.White, tw * 0.13f, roof - Offset(0f, tw * 0.38f))
     drawCircle(Palette5.PersianBlue, tw * 0.13f, roof - Offset(0f, tw * 0.38f), style = Stroke(tw * 0.02f))
     drawCircle(PR.Amber, tw * 0.06f, roof - Offset(0f, tw * 0.38f))
+}
+
+private fun DrawScope.drawCityHall(sprite: Sprite) {
+    val tw = sprite.tileWidth
+    val w = sprite.size * tw * BUILDING_INSET
+    val walls = Walls(sprite.anchor, w, w / 2, BuildingType.CITY_HALL.heightInTiles() * tw)
+    drawIsoBox(sprite.anchor, w, w / 2, walls.height, top = Color(0xFFF4F6FC), left = Color(0xFFCBD6EE), right = Color(0xFFDDE5F7))
+
+    // Columns on both walls and a dark band under the roof
+    for (face in listOf<(Float, Float) -> Offset>(walls::left, walls::right)) {
+        for (k in 0 until 4) {
+            val u = 0.12f + k * 0.24f
+            fillOnWall(face, u, u + 0.08f, 0.05f, 0.78f, Color.White)
+        }
+        fillOnWall(face, 0f, 1f, 0.82f, 1f, Palette5.DuskBlue)
+    }
+    drawDoor(walls, sprite, Palette5.DeepNavy)
+
+    // A flag on a pole: the town's seat of government
+    val roof = sprite.anchor - Offset(0f, walls.height)
+    val top = roof - Offset(0f, tw * 0.45f)
+    drawLine(Palette5.DeepNavy, roof, top, strokeWidth = tw * 0.025f, cap = StrokeCap.Round)
+    drawPath(
+        Path().apply { moveTo(top.x, top.y); lineTo(top.x + tw * 0.22f, top.y + tw * 0.06f); lineTo(top.x, top.y + tw * 0.12f); close() },
+        Palette5.PersianBlue,
+    )
 }

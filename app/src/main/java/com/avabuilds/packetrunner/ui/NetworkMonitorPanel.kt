@@ -90,6 +90,8 @@ fun NetworkMonitorPanel(
                 },
         ) {
             val officeAt = Offset(size.width * 0.12f, size.height / 2f)
+            // the circles shrink a little when there are many rows, so the names under them still fit
+            val nodeRadius = minOf(15.dp.toPx(), size.height / rows * 0.26f)
             val labelStyle = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PR.Ink)
 
             // the office
@@ -101,7 +103,7 @@ fun NetworkMonitorPanel(
             neighbors.forEachIndexed { i, neighbor ->
                 val status = NetworkMonitor.status(state, neighbor)
                 val color = status.color()
-                val to = Offset(size.width * 0.86f, (i + 0.5f) * size.height / rows)
+                val to = Offset(size.width * 0.86f, (i + 0.42f) * size.height / rows)
                 val from = Offset(officeAt.x + box, officeAt.y)
 
                 // the link
@@ -122,12 +124,12 @@ fun NetworkMonitorPanel(
 
                 // the building at the end of the link: a ring pulses while a problem is showing
                 if (status == LinkStatus.DEGRADED || status == LinkStatus.DOWN) {
-                    drawCircle(color.copy(alpha = 0.35f * (1f - phase.value)), (15f + 12f * phase.value).dp.toPx(), to)
+                    drawCircle(color.copy(alpha = 0.35f * (1f - phase.value)), nodeRadius * (1f + 0.8f * phase.value), to)
                 }
-                drawCircle(color, 15.dp.toPx(), to)
+                drawCircle(color, nodeRadius, to)
                 val reported = NetworkMonitor.isReported(state, neighbor)
                 val name = textMeasurer.measure(if (reported) "${neighbor.name} ✓" else neighbor.name, labelStyle)
-                drawText(name, topLeft = Offset(to.x - name.size.width / 2f, to.y + 16.dp.toPx()))
+                drawText(name, topLeft = Offset(to.x - name.size.width / 2f, to.y + nodeRadius + 1.dp.toPx()))
             }
         }
 

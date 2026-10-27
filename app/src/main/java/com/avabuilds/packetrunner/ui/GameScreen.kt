@@ -29,12 +29,17 @@ import com.avabuilds.packetrunner.game.GameEngine
 import com.avabuilds.packetrunner.game.NetworkMonitor
 import com.avabuilds.packetrunner.game.Neighbors
 import com.avabuilds.packetrunner.game.RequestGenerator
+import com.avabuilds.packetrunner.game.RequestType
 import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.game.Town
+import com.avabuilds.packetrunner.network.Concept
+import com.avabuilds.packetrunner.network.RoutingPuzzle
+import com.avabuilds.packetrunner.network.RoutingPuzzles
 import com.avabuilds.packetrunner.network.Scenario
 import com.avabuilds.packetrunner.network.Scenarios
 import com.avabuilds.packetrunner.ui.auth.AccountPanel
 import com.avabuilds.packetrunner.ui.notebook.NotebookPanel
+import com.avabuilds.packetrunner.ui.scene.RoutingScreen
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
 
@@ -69,6 +74,7 @@ fun GameScreen(
     var saveMark by remember { mutableStateOf("") } // cloud mark: ... while saving, a tick when stored, ! when it failed
     var showNotebook by remember { mutableStateOf(false) }
     var showAccount by remember { mutableStateOf(false) }
+    var routing by remember { mutableStateOf<RoutingPuzzle?>(null) } // the City Hall router job, if open
     var monitorOpen by remember { mutableStateOf(false) }
     var monitorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -79,7 +85,7 @@ fun GameScreen(
             delay(200)
             val now = System.nanoTime()
             // The day clock waits while the player is inside a room, working
-            if (scenario == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
+            if (scenario == null && routing == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
             last = now
         }
     }
@@ -90,6 +96,12 @@ fun GameScreen(
             delay(600)
             saveMark = "☁…"
             saves.save(user.uid, save) { ok -> saveMark = if (ok) "☁✓" else "☁!" }
+        }
+    }
+    fun saveConceptsAsNote(title: String, concepts: List<Concept>) {
+        val body = concepts.joinToString("\n\n") { "${it.en} (${it.ko}): ${it.explanation}" }.take(NoteValidation.BODY_MAX)
+        notebook.add(user?.uid ?: LOCAL_UID, NoteDraft(title, body, concepts.firstOrNull()?.en.orEmpty()), System.currentTimeMillis()) { saved ->
+            toast = if (saved != null) "Saved to your notebook" else "Could not save the note"
         }
     }
     LaunchedEffect(toast) {
@@ -150,7 +162,13 @@ fun GameScreen(
                         request = active,
                         neighbor = neighbor,
                         building = building,
-                        onStart = { scenario = Scenarios.forRequest(active) },
+                        onStart = {
+                            if (active.type == RequestType.ROUTE) {
+                                routing = RoutingPuzzles.forJob(state.solved.count { it.type == RequestType.ROUTE })
+                            } else {
+                                scenario = Scenarios.forRequest(active)
+                            }
+                        },
                         onGiveUp = {
                             toast = "${neighbor.name} is unhappy. −₩50"
                             state = GameEngine.complete(state, solved = false)
@@ -202,14 +220,30 @@ fun GameScreen(
                 scenario = room,
                 neighborName = neighbor.name,
                 reward = active.reward,
-                onSaveToNotebook = { title, concepts ->
-                    val body = concepts.joinToString("\n\n") { "${it.en} (${it.ko}): ${it.explanation}" }.take(NoteValidation.BODY_MAX)
-                    notebook.add(user?.uid ?: LOCAL_UID, NoteDraft(title, body, concepts.firstOrNull()?.en.orEmpty()), System.currentTimeMillis()) { saved ->
-                        toast = if (saved != null) "Saved to your notebook" else "Could not save the note"
-                    }
-                },
+                onSaveToNotebook = { title, concepts -> saveConceptsAsNote(title, concepts) },
                 onFinish = { success, payout, stars ->
                     scenario = null
+                    if (success) {
+                        toast = "+₩$payout · ${"★".repeat(stars)} · ${neighbor.name} is happier"
+                        state = GameEngine.complete(state, solved = true, payout = payout, bonusHearts = if (stars == 3) 1 else 0)
+                    } else {
+                        toast = "${neighbor.name} is unhappy. −₩50"
+                        state = GameEngine.complete(state, solved = false)
+                    }
+                },
+            )
+        }
+
+        val puzzle = routing
+        if (puzzle != null && active != null) {
+            val neighbor = neighbors.first { it.id == active.neighborId }
+            RoutingScreen(
+                puzzle = puzzle,
+                clerkName = neighbor.name,
+                reward = active.reward,
+                onSaveToNotebook = { title, concepts -> saveConceptsAsNote(title, concepts) },
+                onFinish = { success, payout, stars ->
+                    routing = null
                     if (success) {
                         toast = "+₩$payout · ${"★".repeat(stars)} · ${neighbor.name} is happier"
                         state = GameEngine.complete(state, solved = true, payout = payout, bonusHearts = if (stars == 3) 1 else 0)

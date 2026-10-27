@@ -27,7 +27,7 @@ class GameEngineTest {
         assertEquals(Clock.DAY_START, s.minute, 0.001f)
         assertEquals(START_MONEY, s.money)
         assertTrue(s.hearts.values.all { it == 0 })
-        assertEquals(setOf("hana"), s.connected)
+        assertEquals(setOf("hana", "dae"), s.connected)
         assertEquals(2, s.upcoming.size)
         assertNull(s.ringing)
     }

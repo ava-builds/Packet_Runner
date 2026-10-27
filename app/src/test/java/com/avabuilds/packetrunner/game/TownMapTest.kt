@@ -20,7 +20,7 @@ class TownMapTest {
     ) = TownMap(10, 10, roads, buildings, trees, start)
 
     @Test fun defaultTownIsValidAndHasTheExpectedBuildings() {
-        assertEquals(setOf("office", "cafe", "house1", "house2", "house3"), town.buildings.map { it.id }.toSet())
+        assertEquals(setOf("office", "cafe", "house1", "house2", "house3", "cityhall"), town.buildings.map { it.id }.toSet())
         assertEquals(town.building("office").door, town.start)
     }
 

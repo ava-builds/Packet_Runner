@@ -34,7 +34,7 @@ object NetworkMonitor {
             .filter { it.neighborId == neighbor.id && it.type != RequestType.INSTALL }
 
     fun status(state: GameState, neighbor: Neighbor): LinkStatus {
-        if (neighbor.id !in state.connected) return LinkStatus.NO_LINK
+        if (neighbor.id !in state.connected || neighbor.movesInDay > state.day) return LinkStatus.NO_LINK
         val open = problems(state, neighbor)
         return when {
             open.any { it === state.ringing || it === state.active || it.callMinute <= state.minute } -> LinkStatus.DOWN

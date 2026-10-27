@@ -120,4 +120,11 @@ class NetworkMonitorTest {
     @Test fun aPlaceWithoutNetworkShowsNoPackets() {
         assertFalse(PacketFlow.dots(LinkStatus.NO_LINK, 0.5f).isNotEmpty())
     }
+
+    @Test fun aNeighborWhoHasNotMovedInYetHasNoLink() {
+        val dae = Neighbors.default().first { it.id == "dae" }
+        val s = dayWithCall(480f).copy(connected = setOf("hana", "dae"), day = 1)
+        assertEquals(LinkStatus.NO_LINK, NetworkMonitor.status(s, dae))
+        assertEquals(LinkStatus.HEALTHY, NetworkMonitor.status(s.copy(day = 2), dae))
+    }
 }

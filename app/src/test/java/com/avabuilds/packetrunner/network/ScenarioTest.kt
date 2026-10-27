@@ -103,9 +103,12 @@ class ScenarioTest {
         assertTrue(s.conceptsUsed(s.scene).isNotEmpty())
     }
 
-    @Test fun everyKindOfRequestHasARoom() {
+    @Test fun roomJobsHaveARoomAndTheRoutingJobHasItsOwnScreen() {
         fun request(type: RequestType) = Request(1, type, "mina", "house1", "hi", 100, 540f)
-        RequestType.values().forEach { assertEquals(it.name.lowercase(), Scenarios.forRequest(request(it)).id.substringBefore('_')) }
+        listOf(RequestType.INSTALL, RequestType.FIX, RequestType.HELP).forEach {
+            assertEquals(it.name.lowercase(), Scenarios.forRequest(request(it))!!.id.substringBefore('_'))
+        }
+        assertNull(Scenarios.forRequest(request(RequestType.ROUTE)))
     }
 
     // ---- Step 5: what devices need, the bigger house, stars ----

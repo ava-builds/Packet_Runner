@@ -158,6 +158,26 @@ object Concepts {
         "An address is only lent for a while. A short lease gives addresses back quickly when a device leaves. A long lease keeps them busy, so the pool can run dry.",
         "Internetworking · Host configuration with DHCP",
     )
+    val FORWARDING_TABLE = Concept(
+        "Forwarding table", "포워딩 테이블",
+        "A router looks at the destination address of every packet and finds the matching row in its forwarding table. The row names the next hop.",
+        "Internetworking · IP forwarding and routing",
+    )
+    val SUBNET_MASK = Concept(
+        "Subnet mask (prefix length)", "서브넷 마스크 (프리픽스 길이)",
+        "The mask says how many leading bits are the network number. A row matches when the destination AND the mask equals the row's network.",
+        "Internetworking · Subnetting and classless addressing (CIDR)",
+    )
+    val LONGEST_PREFIX = Concept(
+        "Longest prefix match", "최장 프리픽스 매칭",
+        "When several rows match, the one with the longest prefix (the most specific network) wins. A small network can sit inside a bigger one.",
+        "Internetworking · Subnetting and classless addressing (CIDR)",
+    )
+    val DEFAULT_ROUTE = Concept(
+        "Default route", "기본 경로",
+        "The row 0.0.0.0/0 matches every address. Packets that match nothing else leave through it, usually towards the Internet.",
+        "Internetworking · IP forwarding and routing",
+    )
     val ACCESS_POINT = Concept(
         "Access point", "액세스 포인트 (AP)",
         "An access point adds Wi-Fi to a wired network. It needs a cable to the router, and it does not hand out IP addresses itself.",
@@ -170,7 +190,8 @@ val Concepts.all: List<Concept>
     get() = listOf(
         Concepts.ROUTER, Concepts.CABLE, Concepts.WIFI_RANGE, Concepts.BANDWIDTH_LATENCY, Concepts.HIDDEN_NODE,
         Concepts.RTS_CTS, Concepts.COLLISION_AVOIDANCE, Concepts.APP_NEEDS, Concepts.REPEATER, Concepts.DHCP_POOL,
-        Concepts.DHCP_LEASE, Concepts.ACCESS_POINT,
+        Concepts.DHCP_LEASE, Concepts.ACCESS_POINT, Concepts.FORWARDING_TABLE, Concepts.SUBNET_MASK,
+        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE,
     )
 
 object Scenarios {
@@ -348,10 +369,11 @@ object Scenarios {
         )
     }
 
-    /** The scenario for a request. */
-    fun forRequest(request: Request): Scenario = when (request.type) {
+    /** The room for a request, or null for jobs that have their own screen. */
+    fun forRequest(request: Request): Scenario? = when (request.type) {
         RequestType.INSTALL -> install(request.buildingId)
         RequestType.FIX -> fix(request.buildingId)
         RequestType.HELP -> help(request.buildingId)
+        RequestType.ROUTE -> null // the forwarding-table job has its own screen (RoutingScreen)
     }
 }

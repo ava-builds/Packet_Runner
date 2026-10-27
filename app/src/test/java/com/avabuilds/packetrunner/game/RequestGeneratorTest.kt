@@ -52,8 +52,16 @@ class RequestGeneratorTest {
         val all = neighbors.map { it.id }.toSet()
         for (day in 1..8) {
             calls(day, connected = all).forEach { assertTrue(it.type != RequestType.INSTALL) }
-            calls(day, connected = emptySet()).forEach { assertEquals(RequestType.INSTALL, it.type) }
+            calls(day, connected = emptySet()).filter { it.buildingId != "cityhall" }.forEach { assertEquals(RequestType.INSTALL, it.type) }
         }
+    }
+
+    @Test fun cityHallAlwaysAsksForARoutingJob() {
+        val all = neighbors.map { it.id }.toSet()
+        val cityHallCalls = (1..8).flatMap { day -> calls(day, connected = all) }.filter { it.buildingId == "cityhall" }
+        assertTrue(cityHallCalls.isNotEmpty())
+        assertTrue(cityHallCalls.all { it.type == RequestType.ROUTE })
+        assertTrue(cityHallCalls.all { it.reward >= RequestGenerator.REWARDS.getValue(RequestType.ROUTE) })
     }
 
     @Test fun numberOfCallsGrowsButStaysAtMostFour() {

@@ -8,6 +8,11 @@ building and solve the job in a small room with Scan, Cable, Device and Settings
 Kotlin, Jetpack Compose. Packages: `game` (grid, pathfinding, requests, day clock, monitor), `network`
 (the network simulator and scenarios), `data` (accounts), `ui` (screens and drawing).
 
+## What is in the town so far
+
+Office (Network Monitor), houses (install a router), the cafe (hidden node, RTS/CTS), IP address jobs (DHCP pool and lease),
+and City Hall (fix a router's forwarding table by setting subnet masks, longest prefix match). More jobs are planned.
+
 ## Firebase setup (needed for log in)
 
 The app builds without Firebase and then shows "Firebase is not set up yet". To turn accounts on:

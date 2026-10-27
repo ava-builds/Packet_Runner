@@ -1,6 +1,6 @@
 package com.avabuilds.packetrunner.game
 
-enum class BuildingType { OFFICE, HOUSE, CAFE }
+enum class BuildingType { OFFICE, HOUSE, CAFE, CITY_HALL }
 
 /**
  * Which wall of a building the door is on. In the isometric view only two walls face the camera:
@@ -106,6 +106,7 @@ object Town {
             Building("house1", BuildingType.HOUSE, "House 1", origin = TilePos(0, 6), size = 2, door = TilePos(2, 6), style = 0),
             Building("house2", BuildingType.HOUSE, "House 2", origin = TilePos(3, 8), size = 2, door = TilePos(5, 8), style = 1),
             Building("house3", BuildingType.HOUSE, "House 3", origin = TilePos(6, 6), size = 2, door = TilePos(8, 6), style = 2),
+            Building("cityhall", BuildingType.CITY_HALL, "City Hall", origin = TilePos(0, 8), size = 2, door = TilePos(2, 8)),
         )
         val trees = setOf(
             TilePos(0, 0), TilePos(1, 0), TilePos(7, 0), TilePos(9, 1), TilePos(9, 3), TilePos(0, 3), TilePos(0, 4),

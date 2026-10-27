@@ -9,7 +9,7 @@ import kotlin.random.Random
  * Rules:
  *  - only neighbors who have already moved in call;
  *  - a neighbor calls at most once a day, and new neighbors always call on their first day;
- *  - a place without internet asks for an INSTALL, a place with internet asks for a FIX or HELP
+ *  - City Hall always asks for a ROUTE job; a place without internet asks for an INSTALL, a place with internet asks for a FIX or HELP
  *    (day 1 is scripted: installs for new homes, a fix for the others);
  *  - the number of calls grows with the day: 2, 2, 3, 3, 4 (never more than 4);
  *  - calls are spread between 09:00 and 16:00.
@@ -30,6 +30,7 @@ class RequestGenerator(private val seed: Long) {
         val step = window / count
         return callers.mapIndexed { i, neighbor ->
             val type = when {
+                neighbor.kind == BuildingType.CITY_HALL -> RequestType.ROUTE
                 neighbor.id !in connected -> RequestType.INSTALL
                 day == 1 -> RequestType.FIX
                 rnd.nextInt(10) < 7 -> RequestType.FIX
@@ -58,6 +59,10 @@ class RequestGenerator(private val seed: Long) {
             RequestType.FIX ->
                 if (isShop) listOf("The cafe Wi-Fi keeps dropping by the window!", "Customers by the window can't stay connected. Please help!")
                 else listOf("The Wi-Fi in our back room is so slow. Can you take a look?", "Our internet keeps cutting out. Can you fix it?")
+            RequestType.ROUTE -> listOf(
+                "The city router sends packets to the wrong places! Can you fix its forwarding table?",
+                "Mail for the wrong network keeps arriving. Please check the router's subnet masks.",
+            )
             RequestType.HELP ->
                 if (isShop) listOf("Customers say they can't get an IP address on our Wi-Fi!")
                 else listOf("My new phone can't get internet!", "Our guests can't connect. It says there is no IP address.")
@@ -67,6 +72,6 @@ class RequestGenerator(private val seed: Long) {
 
     companion object {
         const val MAX_CALLS = 4
-        val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100)
+        val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100, RequestType.ROUTE to 180)
     }
 }
