@@ -57,7 +57,7 @@ fun PacketRunnerApp(modifier: Modifier = Modifier) {
                         SwitchCityLevel.WORLD -> SwitchCityScreen(onFinish, onQuit)
                         MobileIpLevel.WORLD -> MobileIpScreen(onFinish, onQuit)
                         TransportLevel.WORLD -> TransportScreen(onFinish, onQuit)
-                        else -> RouterStationScreen(onFinish, onQuit)
+                        else -> RouterStation3DScreen(onFinish, onQuit)
                     }
                 }
 

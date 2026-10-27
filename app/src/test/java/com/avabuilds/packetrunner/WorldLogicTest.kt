@@ -100,4 +100,38 @@ class WorldLogicTest {
         val all = listOf(MobileIpLevel.pip, MobileIpLevel.home, MobileIpLevel.homeAgent, MobileIpLevel.careOf)
         assertEquals(4, all.toSet().size)
     }
+
+    // ---- World 3 route drawing ----
+    @Test fun routerMapExpectedRoutes() {
+        assertEquals(listOf("SRC", "R2", "NET_B"), RouterMap.expectedRoute(Ipv4.parse("128.96.34.139")))
+        assertEquals(listOf("SRC", "R2", "NET_A"), RouterMap.expectedRoute(Ipv4.parse("128.96.34.15")))
+        assertEquals(listOf("SRC", "R2", "R3", "NET_C"), RouterMap.expectedRoute(Ipv4.parse("128.96.33.200")))
+    }
+
+    @Test fun routerMapEveryExpectedRouteFollowsLinksAndDelivers() {
+        RouterMap.destinations.forEach { dest ->
+            val route = RouterMap.expectedRoute(dest)
+            route.zipWithNext().forEach { (a, b) -> assertTrue("$a-$b", RouterMap.map.linked(a, b)) }
+            assertEquals(RouterMap.destinationNode(dest), route.last())
+            assertEquals(RouteVerdict.Delivered, RouterMap.check(route, dest))
+        }
+    }
+
+    @Test fun routerMapWrongExitIsLostAtThatHop() {
+        val dest = Ipv4.parse("128.96.34.139")
+        val v = RouterMap.check(listOf("SRC", "R2", "NET_A"), dest)
+        assertTrue(v is RouteVerdict.Lost)
+        assertEquals(2, (v as RouteVerdict.Lost).atIndex)
+        assertTrue(v.explanation.contains("128.96.34.0"))
+    }
+
+    @Test fun routerMapStoppingEarlyIsLost() {
+        val dest = Ipv4.parse("128.96.33.200")
+        val v = RouterMap.check(listOf("SRC", "R2", "R3"), dest)
+        assertEquals(2, (v as RouteVerdict.Lost).atIndex)
+    }
+
+    @Test fun networkMapNeighbors() {
+        assertEquals(setOf("SRC", "NET_A", "NET_B", "R3"), RouterMap.map.neighbors("R2").toSet())
+    }
 }
