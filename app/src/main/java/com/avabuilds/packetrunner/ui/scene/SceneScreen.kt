@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.network.CellPos
 import com.avabuilds.packetrunner.network.ClientReport
 import com.avabuilds.packetrunner.network.ClientStatus
+import com.avabuilds.packetrunner.network.Concept
 import com.avabuilds.packetrunner.network.DhcpPool
 import com.avabuilds.packetrunner.network.Device
 import com.avabuilds.packetrunner.network.DeviceSettings
@@ -109,6 +110,8 @@ fun SceneScreen(
     reward: Int,
     onFinish: (success: Boolean, payout: Int, stars: Int) -> Unit,
     modifier: Modifier = Modifier,
+    /** When given, the concept card offers to save what the player learned. */
+    onSaveToNotebook: ((title: String, concepts: List<Concept>) -> Unit)? = null,
 ) {
     var scene by remember { mutableStateOf(scenario.scene) }
     var spent by remember { mutableIntStateOf(0) }
@@ -451,6 +454,7 @@ fun SceneScreen(
                 stars = stars,
                 tip = tip,
                 payout = payout,
+                onSaveToNotebook = onSaveToNotebook?.let { save -> { save(scenario.title, scenario.conceptsUsed(scene)) } },
                 onContinue = { onFinish(true, payout, stars) },
             )
         }

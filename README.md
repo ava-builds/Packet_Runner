@@ -27,6 +27,12 @@ Your day, money, friendship, built networks and solved jobs are saved to Firesto
 2. Open the **Rules** tab, paste the contents of `firestore.rules` from this repo, and press **Publish**.
 3. Run the app, log in, play a little, and check **Firestore Database → Data → players** for your document.
 
+## Engineer's notebook
+
+The 📓 pill opens your notebook: create, read, search, edit and delete notes. Notes live in Firestore under
+`players/{uid}/notes` (the same rules cover them). After a job, the "What you just did" card can save the concepts you used as a note.
+Without an account the notebook works too, but only until you close the app.
+
 ## Tests
 
 ```

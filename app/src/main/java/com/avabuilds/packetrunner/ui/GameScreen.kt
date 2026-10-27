@@ -18,6 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.data.AuthRepository
+import com.avabuilds.packetrunner.data.NoteDraft
+import com.avabuilds.packetrunner.data.NoteValidation
+import com.avabuilds.packetrunner.data.NotebookRepository
 import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.game.BuildingType
@@ -31,8 +34,12 @@ import com.avabuilds.packetrunner.game.Town
 import com.avabuilds.packetrunner.network.Scenario
 import com.avabuilds.packetrunner.network.Scenarios
 import com.avabuilds.packetrunner.ui.auth.AccountPanel
+import com.avabuilds.packetrunner.ui.notebook.NotebookPanel
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
+
+/** The notebook owner when nobody is logged in (playing without an account). */
+private const val LOCAL_UID = "local"
 
 /**
  * The whole game screen: the town, plus the day clock, the ringing phone and the job cards on top.
@@ -43,6 +50,7 @@ fun GameScreen(
     user: UserProfile?,
     auth: AuthRepository?,
     saves: SaveRepository?,
+    notebook: NotebookRepository,
     initialSave: SaveData?,
     onUserChanged: (UserProfile) -> Unit,
     onLoggedOut: () -> Unit,
@@ -59,6 +67,7 @@ fun GameScreen(
     var toast by remember { mutableStateOf<String?>(null) }
     var scenario by remember { mutableStateOf<Scenario?>(null) } // the room the player is working in, if any
     var saveMark by remember { mutableStateOf("") } // cloud mark: ... while saving, a tick when stored, ! when it failed
+    var showNotebook by remember { mutableStateOf(false) }
     var showAccount by remember { mutableStateOf(false) }
     var monitorOpen by remember { mutableStateOf(false) }
     var monitorMessage by remember { mutableStateOf<String?>(null) }
@@ -106,10 +115,11 @@ fun GameScreen(
                 onSkipDay = { state = GameEngine.skipToEvening(state) },
                 playerName = user?.let { "${it.nickname} $saveMark".trim() },
                 onAccount = { showAccount = !showAccount },
+                onNotebook = { showNotebook = !showNotebook; if (showNotebook) monitorOpen = false },
             )
             toast?.let { Text(it, fontSize = 13.sp, color = PR.Green800, modifier = Modifier.padding(top = 6.dp)) }
             if (showAccount && user != null && auth != null) {
-                AccountPanel(user, auth, saves, onUserChanged, onLoggedOut, onClose = { showAccount = false }, modifier = Modifier.padding(top = 8.dp))
+                AccountPanel(user, auth, saves, notebook, onUserChanged, onLoggedOut, onClose = { showAccount = false }, modifier = Modifier.padding(top = 8.dp))
             }
             if (showFriends) FriendsPanel(neighbors, state, Modifier.padding(top = 8.dp))
         }
@@ -152,6 +162,16 @@ fun GameScreen(
             }
         }
 
+        // The notebook sits above the town like the monitor
+        if (showNotebook && !state.dayOver) {
+            NotebookPanel(
+                uid = user?.uid ?: LOCAL_UID,
+                repo = notebook,
+                onClose = { showNotebook = false },
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp, start = 12.dp, end = 12.dp),
+            )
+        }
+
         // The Network Monitor stays open while the clock runs, so problems can show up in front of the player
         if (monitorOpen && !state.dayOver) {
             NetworkMonitorPanel(
@@ -182,6 +202,12 @@ fun GameScreen(
                 scenario = room,
                 neighborName = neighbor.name,
                 reward = active.reward,
+                onSaveToNotebook = { title, concepts ->
+                    val body = concepts.joinToString("\n\n") { "${it.en} (${it.ko}): ${it.explanation}" }.take(NoteValidation.BODY_MAX)
+                    notebook.add(user?.uid ?: LOCAL_UID, NoteDraft(title, body, concepts.firstOrNull()?.en.orEmpty()), System.currentTimeMillis()) { saved ->
+                        toast = if (saved != null) "Saved to your notebook" else "Could not save the note"
+                    }
+                },
                 onFinish = { success, payout, stars ->
                     scenario = null
                     if (success) {

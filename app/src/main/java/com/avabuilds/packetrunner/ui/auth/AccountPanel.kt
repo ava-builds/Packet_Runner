@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.data.AuthOutcome
 import com.avabuilds.packetrunner.data.AuthRepository
 import com.avabuilds.packetrunner.data.AuthValidation
+import com.avabuilds.packetrunner.data.NotebookRepository
 import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.ui.PR
@@ -36,6 +37,7 @@ fun AccountPanel(
     user: UserProfile,
     auth: AuthRepository,
     saves: SaveRepository?,
+    notebook: NotebookRepository?,
     onUserChanged: (UserProfile) -> Unit,
     onLoggedOut: () -> Unit,
     onClose: () -> Unit,
@@ -82,7 +84,7 @@ fun AccountPanel(
                 PrimaryButton("Delete forever", Modifier.weight(1f)) {
                     if (!busy) {
                         busy = true
-                        auth.deleteAccount(password, beforeDelete = { uid, proceed -> saves?.delete(uid, proceed) ?: proceed(true) }) { outcome ->
+                        auth.deleteAccount(password, beforeDelete = { uid, proceed -> deleteStoredData(uid, saves, notebook, proceed) }) { outcome ->
                             busy = false
                             when (outcome) {
                                 is AuthOutcome.Success -> onLoggedOut()
@@ -100,4 +102,10 @@ fun AccountPanel(
         }
         message?.let { Text(it, fontSize = 13.sp, color = PR.Ink) }
     }
+}
+
+/** Removes the player's notes and then the saved game; [proceed] says whether both are gone. */
+private fun deleteStoredData(uid: String, saves: SaveRepository?, notebook: NotebookRepository?, proceed: (Boolean) -> Unit) {
+    fun deleteSave() = if (saves != null) saves.delete(uid, proceed) else proceed(true)
+    if (notebook != null) notebook.deleteAll(uid) { ok -> if (ok) deleteSave() else proceed(false) } else deleteSave()
 }

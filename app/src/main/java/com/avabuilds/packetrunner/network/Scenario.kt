@@ -165,6 +165,14 @@ object Concepts {
     )
 }
 
+/** Every concept the game teaches, for the notebook's topic picker. */
+val Concepts.all: List<Concept>
+    get() = listOf(
+        Concepts.ROUTER, Concepts.CABLE, Concepts.WIFI_RANGE, Concepts.BANDWIDTH_LATENCY, Concepts.HIDDEN_NODE,
+        Concepts.RTS_CTS, Concepts.COLLISION_AVOIDANCE, Concepts.APP_NEEDS, Concepts.REPEATER, Concepts.DHCP_POOL,
+        Concepts.DHCP_LEASE, Concepts.ACCESS_POINT,
+    )
+
 object Scenarios {
     private const val CABLE_PRICE = 5
 

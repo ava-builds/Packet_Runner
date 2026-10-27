@@ -16,7 +16,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.avabuilds.packetrunner.data.AuthRepository
 import com.avabuilds.packetrunner.data.FirebaseAuthRepository
+import com.avabuilds.packetrunner.data.FirestoreNotebookRepository
 import com.avabuilds.packetrunner.data.FirestoreSaveRepository
+import com.avabuilds.packetrunner.data.InMemoryNotebookRepository
+import com.avabuilds.packetrunner.data.NotebookRepository
 import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.data.UserProfile
@@ -34,6 +37,7 @@ class MainActivity : ComponentActivity() {
         val firebaseReady = FirebaseAuthRepository.isConfigured(this)
         val auth: AuthRepository? = if (firebaseReady) FirebaseAuthRepository() else null
         val saves: SaveRepository? = if (firebaseReady) FirestoreSaveRepository() else null
+        val notebook: NotebookRepository = if (firebaseReady) FirestoreNotebookRepository() else InMemoryNotebookRepository()
         setContent {
             PacketRunnerTheme {
                 Scaffold(
@@ -56,6 +60,7 @@ class MainActivity : ComponentActivity() {
                                     user = signedIn,
                                     auth = auth,
                                     saves = saves,
+                                    notebook = notebook,
                                     initialSave = save,
                                     onUserChanged = { user = it },
                                     onLoggedOut = { user = null },

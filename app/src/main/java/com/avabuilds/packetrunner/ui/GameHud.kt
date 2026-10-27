@@ -42,13 +42,14 @@ fun heartsText(hearts: Int) = "♥".repeat(hearts) + "♡".repeat(MAX_HEARTS - h
  * Long-pressing the day is a developer shortcut that jumps to the evening, to try later days quickly.
  */
 @Composable
-fun StatusPills(state: GameState, onFriends: () -> Unit, onSkipDay: () -> Unit, playerName: String? = null, onAccount: () -> Unit = {}) {
+fun StatusPills(state: GameState, onFriends: () -> Unit, onSkipDay: () -> Unit, playerName: String? = null, onAccount: () -> Unit = {}, onNotebook: () -> Unit = {}) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.combinedClickable(onClick = {}, onLongClick = onSkipDay)) {
             Pill("Day ${state.day} · ${formatTime(state.minute)}", PR.White, PR.Ink)
         }
         Pill("₩ ${state.money}", PR.Amber50, PR.Amber800)
         Box(Modifier.clickable(onClick = onFriends)) { Pill("♥ Friends", PR.Red50, PR.Red800) }
+        Box(Modifier.clickable(onClick = onNotebook)) { Pill("📓", PR.Blue50, PR.Blue800) }
         if (playerName != null) Box(Modifier.clickable(onClick = onAccount)) { Pill("👤 $playerName", PR.Blue50, PR.Blue800) }
     }
 }
