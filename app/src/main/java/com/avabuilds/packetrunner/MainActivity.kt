@@ -7,22 +7,52 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.avabuilds.packetrunner.data.AuthRepository
+import com.avabuilds.packetrunner.data.FirebaseAuthRepository
+import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.ui.GameScreen
 import com.avabuilds.packetrunner.ui.PR
+import com.avabuilds.packetrunner.ui.auth.AuthScreen
+import com.avabuilds.packetrunner.ui.auth.FirebaseNotConfiguredScreen
 import com.avabuilds.packetrunner.ui.theme.PacketRunnerTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val firebaseReady = FirebaseAuthRepository.isConfigured(this)
+        val auth: AuthRepository? = if (firebaseReady) FirebaseAuthRepository() else null
         setContent {
             PacketRunnerTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     containerColor = PR.Bg,
                 ) { innerPadding ->
-                    GameScreen(modifier = Modifier.padding(innerPadding))
+                    val modifier = Modifier.padding(innerPadding)
+                    var user by remember { mutableStateOf(auth?.currentUser) }
+                    var playingWithoutAccount by remember { mutableStateOf(false) }
+                    when {
+                        auth == null && !playingWithoutAccount ->
+                            FirebaseNotConfiguredScreen(onPlayWithoutAccount = { playingWithoutAccount = true }, modifier = modifier)
+                        auth != null && user == null ->
+                            AuthScreen(auth, onSignedIn = { user = it }, modifier = modifier)
+                        // a new game screen for every account, so one player never sees another's town
+                        else -> key(user?.uid) {
+                            GameScreen(
+                                user = user,
+                                auth = auth,
+                                onUserChanged = { user = it },
+                                onLoggedOut = { user = null },
+                                modifier = modifier,
+                            )
+                        }
+                    }
                 }
             }
         }

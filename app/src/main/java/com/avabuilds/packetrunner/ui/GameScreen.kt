@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.avabuilds.packetrunner.data.AuthRepository
+import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.game.BuildingType
 import com.avabuilds.packetrunner.game.FlagOutcome
 import com.avabuilds.packetrunner.game.GameEngine
@@ -25,6 +27,7 @@ import com.avabuilds.packetrunner.game.RequestGenerator
 import com.avabuilds.packetrunner.game.Town
 import com.avabuilds.packetrunner.network.Scenario
 import com.avabuilds.packetrunner.network.Scenarios
+import com.avabuilds.packetrunner.ui.auth.AccountPanel
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
 
@@ -33,7 +36,13 @@ import kotlinx.coroutines.delay
  * All the rules live in [GameEngine]; this screen shows the state and sends the player's choices to it.
  */
 @Composable
-fun GameScreen(modifier: Modifier = Modifier) {
+fun GameScreen(
+    user: UserProfile?,
+    auth: AuthRepository?,
+    onUserChanged: (UserProfile) -> Unit,
+    onLoggedOut: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val town = remember { Town.default() }
     val neighbors = remember { Neighbors.default() }
     val generator = remember { RequestGenerator(seed = 2026L) } // fixed seed so every run is the same while we build
@@ -42,6 +51,7 @@ fun GameScreen(modifier: Modifier = Modifier) {
     var showFriends by remember { mutableStateOf(false) }
     var toast by remember { mutableStateOf<String?>(null) }
     var scenario by remember { mutableStateOf<Scenario?>(null) } // the room the player is working in, if any
+    var showAccount by remember { mutableStateOf(false) }
     var monitorOpen by remember { mutableStateOf(false) }
     var monitorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -73,8 +83,17 @@ fun GameScreen(modifier: Modifier = Modifier) {
         // Top strip: title, day, money and friends
         Column(Modifier.align(Alignment.TopStart).padding(12.dp)) {
             Text("Network Town", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = PR.Ink)
-            StatusPills(state, onFriends = { showFriends = !showFriends }, onSkipDay = { state = GameEngine.skipToEvening(state) })
+            StatusPills(
+                state,
+                onFriends = { showFriends = !showFriends },
+                onSkipDay = { state = GameEngine.skipToEvening(state) },
+                playerName = user?.nickname,
+                onAccount = { showAccount = !showAccount },
+            )
             toast?.let { Text(it, fontSize = 13.sp, color = PR.Green800, modifier = Modifier.padding(top = 6.dp)) }
+            if (showAccount && user != null && auth != null) {
+                AccountPanel(user, auth, onUserChanged, onLoggedOut, onClose = { showAccount = false }, modifier = Modifier.padding(top = 8.dp))
+            }
             if (showFriends) FriendsPanel(neighbors, state, Modifier.padding(top = 8.dp))
         }
 
