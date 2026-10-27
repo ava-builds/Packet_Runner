@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -60,7 +61,7 @@ private val HeaderHeight = 200.dp
 private val SectionHeight = 250.dp
 private val FooterHeight = 170.dp
 private val RoadWidth = 96.dp
-private val BandHeight = 124.dp
+private val BandHeight = 112.dp
 
 // Colors, mapped from the poster's structure onto the app palette
 /** Background of the whole screen while the map is showing, status bar areas included. */
@@ -113,7 +114,7 @@ fun WorldMapScreen(worldStars: Map<Int, Int>, onPlayWorld: (Int) -> Unit) {
                     Box(
                         Modifier.offset(
                             x = if (i % 2 == 0) width * 0.05f + 4.dp else width * 0.95f - 60.dp,
-                            y = centerY - BandHeight / 2 - 36.dp,
+                            y = centerY - BandHeight / 2 - 34.dp,
                         ),
                     ) { Pip(size = 56.dp) }
                 }
@@ -176,16 +177,36 @@ private fun Band(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        val icon = @Composable { WorldIcon(world.number, Modifier.size(76.dp)) }
+        val icon = @Composable { WorldIcon(world.number, Modifier.size(62.dp)) }
         val text = @Composable {
             Column(Modifier.weight(1f), horizontalAlignment = if (iconOnLeft) Alignment.Start else Alignment.End) {
-                Text("${world.number} · ${world.title}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = accent)
-                Text(world.topic, fontSize = 12.sp, color = PR.Muted, textAlign = if (iconOnLeft) TextAlign.Start else TextAlign.End)
-                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        Modifier.size(24.dp).background(accent, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) { Text("${world.number}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                    Text(world.title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = accent)
+                }
+                Text(
+                    world.topic,
+                    fontSize = 11.sp,
+                    color = PR.Muted,
+                    textAlign = if (iconOnLeft) TextAlign.Start else TextAlign.End,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+                Spacer(Modifier.height(5.dp))
                 when {
-                    stars > 0 -> Text("★".repeat(stars) + "☆".repeat(3 - stars), fontSize = 16.sp, color = PR.Amber)
-                    isHere -> Text("Play now ▶", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette5.PersianBlue)
-                    else -> Text("Tap to play", fontSize = 12.sp, color = PR.Muted)
+                    stars > 0 -> Text("★".repeat(stars) + "☆".repeat(3 - stars), fontSize = 14.sp, color = PR.Amber)
+                    isHere -> Text(
+                        "Play now ▶",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier
+                            .background(Palette5.PersianBlue, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 3.dp),
+                    )
+                    else -> Text("Tap to play", fontSize = 11.sp, color = PR.Muted)
                 }
             }
         }
