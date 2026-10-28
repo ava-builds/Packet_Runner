@@ -8,7 +8,10 @@ sealed interface LoadResult {
     data class Failed(val message: String) : LoadResult
 }
 
-/** Where a player's game is kept. The game only knows this interface; [FirestoreSaveRepository] is the real one. */
+/** The id the game and notebook are kept under on the phone: there is one local game per phone. */
+const val LOCAL_UID = "local"
+
+/** Where a player's game is kept. The game only knows this interface; [LocalSaveRepository] keeps it on the phone and [FirestoreSaveRepository] is the optional cloud copy. */
 interface SaveRepository {
     fun load(uid: String, onDone: (LoadResult) -> Unit)
     fun save(uid: String, data: SaveData, onDone: (Boolean) -> Unit)

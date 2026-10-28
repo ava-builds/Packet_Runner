@@ -18,11 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.avabuilds.packetrunner.data.AuthRepository
+import com.avabuilds.packetrunner.data.CloudBackup
+import com.avabuilds.packetrunner.data.CloudCopy
 import com.avabuilds.packetrunner.data.NotebookRepository
-import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.game.GameState
+import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.game.Neighbor
 import com.avabuilds.packetrunner.game.Progress
 import com.avabuilds.packetrunner.game.RequestType
@@ -31,22 +32,23 @@ import com.avabuilds.packetrunner.ui.FriendsPanel
 import com.avabuilds.packetrunner.ui.PR
 import com.avabuilds.packetrunner.ui.Palette5
 import com.avabuilds.packetrunner.ui.Panel
-import com.avabuilds.packetrunner.ui.auth.AccountPanel
+import com.avabuilds.packetrunner.ui.auth.CloudBackupPanel
 
 /**
  * The profile: who you are (face, nickname, level and XP), how the game is going (day, money, jobs done, upgrades),
- * your friends and their hearts, and the account settings when you are logged in.
+ * your friends and their hearts, and the optional cloud backup.
  */
 @Composable
 fun ProfileScreen(
     state: GameState,
     neighbors: List<Neighbor>,
     user: UserProfile?,
-    auth: AuthRepository?,
-    saves: SaveRepository?,
+    cloud: CloudBackup?,
+    currentSave: SaveData,
     notebook: NotebookRepository,
     onUserChanged: (UserProfile) -> Unit,
     onLoggedOut: () -> Unit,
+    onRestore: (CloudCopy) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     onWorkSettings: () -> Unit = {},
@@ -82,12 +84,13 @@ fun ProfileScreen(
 
             FriendsPanel(neighbors, state)
 
-            if (user != null && auth != null) {
-                AccountPanel(user, auth, saves, notebook, onUserChanged, onLoggedOut, onClose = onClose)
+            // The cloud backup is optional and only offered when Firebase is set up
+            if (cloud != null) {
+                CloudBackupPanel(cloud, user, currentSave, notebook, onUserChanged, onLoggedOut, onRestore, onClose)
             } else {
                 Panel(color = PR.White, borderColor = PR.Line) {
-                    Text("Playing without an account", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text("Log in to save your town and keep a notebook.", fontSize = 12.sp, color = PR.Muted)
+                    Text("Saved on this phone", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("Your town and notebook are kept on this phone, so you can play with no internet.", fontSize = 12.sp, color = PR.Muted)
                 }
             }
         }

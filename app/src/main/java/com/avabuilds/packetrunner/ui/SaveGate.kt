@@ -21,14 +21,14 @@ import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.game.SaveData
 
 /**
- * Loads the player's save before the game starts, so a new game never overwrites an old one by mistake.
- * While loading it shows a short message; when loading fails it offers Retry and Log out, never "start fresh".
+ * Loads the saved game from the phone before the game starts, so a new game never overwrites an old one by mistake.
+ * While loading it shows a short message; when loading fails it offers Try again, never "start fresh".
  */
 @Composable
 fun SaveGate(
     uid: String,
     saves: SaveRepository,
-    onLogOut: () -> Unit,
+    onLogOut: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     content: @Composable (SaveData?) -> Unit,
 ) {
@@ -48,7 +48,7 @@ fun SaveGate(
                 Text("Your town could not be loaded", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Text(r.message, fontSize = 14.sp, lineHeight = 20.sp)
                 PrimaryButton("Try again") { attempt++ }
-                SecondaryButton("Log out", onClick = onLogOut)
+                if (onLogOut != null) SecondaryButton("Log out", onClick = onLogOut)
             }
         }
         is LoadResult.Found -> content(r.save)

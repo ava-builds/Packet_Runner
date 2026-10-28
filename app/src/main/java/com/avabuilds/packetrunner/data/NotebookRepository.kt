@@ -2,7 +2,8 @@ package com.avabuilds.packetrunner.data
 
 /**
  * The notebook's storage: create, read, update and delete notes of one player.
- * [FirestoreNotebookRepository] is the real one; [InMemoryNotebookRepository] keeps notes only while the app runs.
+ * [LocalNotebookRepository] keeps them on the phone, [FirestoreNotebookRepository] is the optional cloud copy,
+ * and [InMemoryNotebookRepository] keeps notes only while the app runs (for tests).
  */
 interface NotebookRepository {
     fun list(uid: String, onDone: (Result<List<Note>>) -> Unit)
@@ -14,9 +15,12 @@ interface NotebookRepository {
 
     /** Removes every note of the player (used when the account is deleted). */
     fun deleteAll(uid: String, onDone: (Boolean) -> Unit)
+
+    /** Makes the stored notes exactly [notes] (same ids and times), for backing up and restoring. */
+    fun replaceAll(uid: String, notes: List<Note>, onDone: (Boolean) -> Unit)
 }
 
-/** Notes kept in memory, for playing without an account and for tests. */
+/** Notes kept in memory, for tests. */
 class InMemoryNotebookRepository : NotebookRepository {
     private val notes = linkedMapOf<String, MutableMap<String, Note>>()
     private var nextId = 1
@@ -41,6 +45,11 @@ class InMemoryNotebookRepository : NotebookRepository {
 
     override fun deleteAll(uid: String, onDone: (Boolean) -> Unit) {
         notes.remove(uid)
+        onDone(true)
+    }
+
+    override fun replaceAll(uid: String, notes: List<Note>, onDone: (Boolean) -> Unit) {
+        of(uid).apply { clear(); notes.forEach { put(it.id, it) } }
         onDone(true)
     }
 }

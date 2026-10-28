@@ -45,4 +45,17 @@ class FirestoreNotebookRepository : NotebookRepository {
             }
             .addOnFailureListener { onDone(false) }
     }
+
+    override fun replaceAll(uid: String, items: List<Note>, onDone: (Boolean) -> Unit) {
+        notes(uid).get()
+            .addOnSuccessListener { snap ->
+                val batch = FirebaseFirestore.getInstance().batch()
+                snap.documents.forEach { batch.delete(it.reference) }
+                items.forEach { batch.set(notes(uid).document(it.id), it.toMap()) }
+                batch.commit()
+                    .addOnSuccessListener { onDone(true) }
+                    .addOnFailureListener { onDone(false) }
+            }
+            .addOnFailureListener { onDone(false) }
+    }
 }

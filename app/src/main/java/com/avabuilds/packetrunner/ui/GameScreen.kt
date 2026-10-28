@@ -27,7 +27,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.avabuilds.packetrunner.data.AuthRepository
+import com.avabuilds.packetrunner.data.CloudBackup
+import com.avabuilds.packetrunner.data.CloudCopy
+import com.avabuilds.packetrunner.data.LOCAL_UID
 import com.avabuilds.packetrunner.data.NoteDraft
 import com.avabuilds.packetrunner.data.NoteValidation
 import com.avabuilds.packetrunner.data.NotebookRepository
@@ -102,22 +104,21 @@ import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-/** The notebook owner when nobody is logged in (playing without an account). */
-private const val LOCAL_UID = "local"
-
 /**
  * The whole game screen: the town, plus the day clock, the ringing phone and the job cards on top.
  * All the rules live in [GameEngine]; this screen shows the state and sends the player's choices to it.
  */
 @Composable
 fun GameScreen(
-    user: UserProfile?,
-    auth: AuthRepository?,
-    saves: SaveRepository?,
+    /** The game and the notebook live on the phone; [cloud] (only when Firebase is set up) is an optional online copy. */
+    localSaves: SaveRepository,
     notebook: NotebookRepository,
+    cloud: CloudBackup?,
+    user: UserProfile?,
     initialSave: SaveData?,
     onUserChanged: (UserProfile) -> Unit,
     onLoggedOut: () -> Unit,
+    onRestore: (CloudCopy) -> Unit,
     modifier: Modifier = Modifier,
     /** The call the player tapped in a notification; the game brings it to the phone. */
     openCallId: Int? = null,
@@ -264,16 +265,21 @@ fun GameScreen(
 
     // Autosave: whenever something that lasts changes (not the clock), store it a moment later
     val save by remember { derivedStateOf { SaveData.from(state) } }
-    if (user != null && saves != null) {
+    LaunchedEffect(save) {
+        delay(300)
+        localSaves.save(LOCAL_UID, save) {}
+    }
+    // While logged in to the cloud backup, every change is copied online as well
+    if (user != null && cloud != null) {
         LaunchedEffect(save) {
             delay(600)
             saveMark = "☁…"
-            saves.save(user.uid, save) { ok -> saveMark = if (ok) "☁✓" else "☁!" }
+            cloud.backUpGame(user.uid, save) { ok -> saveMark = if (ok) "☁✓" else "☁!" }
         }
     }
     fun saveConceptsAsNote(title: String, concepts: List<Concept>) {
         val body = concepts.joinToString("\n\n") { "${it.en} (${it.ko}): ${it.explanation}" }.take(NoteValidation.BODY_MAX)
-        notebook.add(user?.uid ?: LOCAL_UID, NoteDraft(title, body, concepts.firstOrNull()?.en.orEmpty()), System.currentTimeMillis()) { saved ->
+        notebook.add(LOCAL_UID, NoteDraft(title, body, concepts.firstOrNull()?.en.orEmpty()), System.currentTimeMillis()) { saved ->
             toast = if (saved != null) "Saved to your notebook" else "Could not save the note"
         }
     }
@@ -414,7 +420,7 @@ fun GameScreen(
         // The notebook sits above the town like the monitor
         if (tab == NavTab.NOTEBOOK && !state.dayOver) {
             NotebookPanel(
-                uid = user?.uid ?: LOCAL_UID,
+                uid = LOCAL_UID,
                 repo = notebook,
                 onClose = { tab = NavTab.TOWN },
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = TopBarHeight + 16.dp, start = 12.dp, end = 12.dp),
@@ -499,8 +505,8 @@ fun GameScreen(
         }
         if (tab == NavTab.PROFILE) {
             ProfileScreen(
-                state = state, neighbors = neighbors, user = user, auth = auth, saves = saves, notebook = notebook,
-                onUserChanged = onUserChanged, onLoggedOut = onLoggedOut, onClose = { tab = NavTab.TOWN }, onWorkSettings = { workSettingsOpen = true },
+                state = state, neighbors = neighbors, user = user, cloud = cloud, currentSave = save, notebook = notebook,
+                onUserChanged = onUserChanged, onLoggedOut = onLoggedOut, onRestore = onRestore, onClose = { tab = NavTab.TOWN }, onWorkSettings = { workSettingsOpen = true },
                 modifier = Modifier.padding(bottom = BottomNavHeight),
             )
         }
