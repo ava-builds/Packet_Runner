@@ -48,9 +48,6 @@ import com.avabuilds.packetrunner.ui.sprites.labelHeightInTiles
 import com.avabuilds.packetrunner.ui.sprites.spriteKey
 import kotlin.math.roundToInt
 
-/** Walking speed in tiles per second. */
-private const val WALK_SPEED = 4f
-
 private fun Offset.toVec2() = Vec2(x, y)
 private fun Vec2.toOffset() = Offset(x, y)
 
@@ -81,7 +78,7 @@ fun IsoTownScreen(controller: TownController, targetBuildingId: String?, modifie
 
         controller.arrivedAt = null
         controller.trail = route
-        val walker = PathWalker(controller.playerPos, route, WALK_SPEED)
+        val walker = PathWalker(controller.playerPos, route, controller.walkSpeed)
         var lastFrame = withFrameNanos { it }
         while (!walker.finished) {
             val now = withFrameNanos { it }

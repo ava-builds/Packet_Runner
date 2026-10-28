@@ -2,6 +2,7 @@ package com.avabuilds.packetrunner.ui
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.avabuilds.packetrunner.game.Building
@@ -22,6 +23,9 @@ class TownController(val town: TownMap) {
     /** The player's position in tile coordinates (fractions while walking). */
     var playerPos by mutableStateOf(town.start.toVec2())
         internal set
+
+    /** How fast the engineer walks, in tiles per second. The scooter upgrade raises it. */
+    var walkSpeed by mutableFloatStateOf(4f)
 
     /** Tiles still ahead of a walking player. Empty when standing still. */
     var trail by mutableStateOf<List<TilePos>>(emptyList())

@@ -12,6 +12,8 @@ data class SaveData(
     /** The neighbors whose place has a working network: the town as the player built it. */
     val connected: Set<String>,
     val solved: List<SolvedRecord>,
+    /** Upgrade levels bought at the shop. */
+    val upgrades: Map<String, Int> = emptyMap(),
 ) {
     /** Makes a loaded save safe: numbers in range, only neighbors that exist, only known job types. */
     fun sanitized(neighbors: List<Neighbor>): SaveData {
@@ -22,6 +24,7 @@ data class SaveData(
             hearts = hearts.filterKeys { it in ids }.mapValues { it.value.coerceIn(0, MAX_HEARTS) },
             connected = connected.filter { it in ids }.toSet(),
             solved = solved,
+            upgrades = Upgrades.sanitized(upgrades),
         )
     }
 
@@ -30,6 +33,7 @@ data class SaveData(
         "money" to money,
         "hearts" to hearts,
         "connected" to connected.sorted(),
+        "upgrades" to upgrades,
         "solved" to solved.map { mapOf("day" to it.day, "type" to it.type.name, "buildingId" to it.buildingId, "payout" to it.payout) },
     )
 
@@ -41,6 +45,7 @@ data class SaveData(
             hearts = state.hearts,
             connected = state.connected,
             solved = state.solved,
+            upgrades = state.upgrades,
         )
 
         /** Reads a stored map. Missing or odd values fall back to a fresh start instead of crashing. */
@@ -54,7 +59,8 @@ data class SaveData(
                 val type = RequestType.entries.firstOrNull { it.name == r["type"] } ?: return@mapNotNull null
                 SolvedRecord(int(r["day"], 1), type, r["buildingId"] as? String ?: return@mapNotNull null, int(r["payout"], 0))
             }
-            return SaveData(int(map["day"], 1), int(map["money"], START_MONEY), hearts, connected, solved)
+            val upgrades = (map["upgrades"] as? Map<*, *>).orEmpty().mapNotNull { (k, v) -> (k as? String)?.let { it to int(v, 0) } }.toMap()
+            return SaveData(int(map["day"], 1), int(map["money"], START_MONEY), hearts, connected, solved, upgrades)
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import com.avabuilds.packetrunner.game.Neighbors
 import com.avabuilds.packetrunner.game.RequestGenerator
 import com.avabuilds.packetrunner.game.RequestType
 import com.avabuilds.packetrunner.game.SaveData
+import com.avabuilds.packetrunner.game.Upgrades
 import com.avabuilds.packetrunner.game.Town
 import com.avabuilds.packetrunner.network.Concept
 import com.avabuilds.packetrunner.network.LabGame
@@ -50,6 +52,8 @@ import com.avabuilds.packetrunner.ui.lab.TransportGame
 import com.avabuilds.packetrunner.ui.lab.LabMenu
 import com.avabuilds.packetrunner.ui.lab.WindowGame
 import com.avabuilds.packetrunner.ui.notebook.NotebookPanel
+import com.avabuilds.packetrunner.ui.office.UpgradeShop
+import com.avabuilds.packetrunner.ui.office.Workbench
 import com.avabuilds.packetrunner.ui.scene.NatScreen
 import com.avabuilds.packetrunner.ui.scene.RoutingScreen
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
@@ -88,6 +92,8 @@ fun GameScreen(
     var showAccount by remember { mutableStateOf(false) }
     var nat by remember { mutableStateOf<NatPuzzle?>(null) } // the Apartments NAT job, if open
     var routing by remember { mutableStateOf<RoutingPuzzle?>(null) } // the City Hall router job, if open
+    var shopOpen by remember { mutableStateOf(false) }
+    var workbenchOpen by remember { mutableStateOf(false) }
     var labMenuOpen by remember { mutableStateOf(false) }
     var labGame by remember { mutableStateOf<LabGame?>(null) }
     var monitorOpen by remember { mutableStateOf(false) }
@@ -100,7 +106,7 @@ fun GameScreen(
             delay(200)
             val now = System.nanoTime()
             // The day clock waits while the player is inside a room, working
-            if (scenario == null && routing == null && nat == null && !labMenuOpen && labGame == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
+            if (scenario == null && routing == null && nat == null && !labMenuOpen && labGame == null && !shopOpen && !workbenchOpen) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
             last = now
         }
     }
@@ -125,6 +131,9 @@ fun GameScreen(
             toast = null
         }
     }
+
+    // The scooter makes the engineer faster
+    SideEffect { controller.walkSpeed = Upgrades.walkSpeed(state.upgrades[Upgrades.SCOOTER] ?: 0) }
 
     val active = state.active
     val ringing = state.ringing
@@ -168,7 +177,7 @@ fun GameScreen(
             } else if (monitorOpen) {
                 // the monitor sits above the town; nothing else is needed down here
             } else if (active == null && controller.arrivedAt?.type == BuildingType.OFFICE) {
-                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null }, onOpenLab = { labMenuOpen = true })
+                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null }, onOpenLab = { labMenuOpen = true }, onOpenWorkbench = { workbenchOpen = true }, onOpenShop = { shopOpen = true })
             } else if (active != null) {
                 val neighbor = neighbors.first { it.id == active.neighborId }
                 val building = town.building(active.buildingId)
@@ -183,7 +192,9 @@ fun GameScreen(
                             } else if (active.type == RequestType.NAT) {
                                 nat = NatPuzzles.forJob(state.solved.count { it.type == RequestType.NAT })
                             } else {
-                                scenario = Scenarios.forRequest(active)
+                                scenario = Scenarios.forRequest(active)?.let {
+                                    it.withCablePrice(Upgrades.cablePrice(it.cablePricePerCell, state.upgrades[Upgrades.CABLE_SPOOL] ?: 0))
+                                }
                             }
                         },
                         onGiveUp = {
@@ -250,6 +261,10 @@ fun GameScreen(
                 },
             )
         }
+
+        // The office tools: the Upgrade shop and the Workbench; the clock waits while they are open
+        if (shopOpen) UpgradeShop(money = state.money, levels = state.upgrades, onBuy = { state = GameEngine.buy(state, it) }, onClose = { shopOpen = false })
+        if (workbenchOpen) Workbench(onClose = { workbenchOpen = false })
 
         // The Lab: a menu of three small games; the clock waits while the player is in it
         val playing = labGame

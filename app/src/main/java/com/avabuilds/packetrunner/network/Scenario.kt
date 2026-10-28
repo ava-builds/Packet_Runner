@@ -44,6 +44,11 @@ class Scenario(
     /** Whether the Scan message points to the router's Settings when devices collide. */
     val pointsToSettings: Boolean = true,
 ) {
+    /** The same job with a different price for a cell of cable (the shop's cable spool makes it cheaper). */
+    fun withCablePrice(price: Int): Scenario = Scenario(
+        id, title, goal, scene, allowed, price, hints, baseConcepts, parCost, goals, hasGlitch, pointsToSettings,
+    )
+
     fun verdict(client: ClientReport): Verdict {
         if (client.status != ClientStatus.CONNECTED) return Verdict.OFFLINE
         val need = goals[client.deviceId] ?: return Verdict.OK

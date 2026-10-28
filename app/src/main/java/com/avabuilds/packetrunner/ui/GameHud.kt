@@ -145,12 +145,22 @@ fun ArrivalCard(
 
 /** The player is at the office with nothing to do: the Network Monitor is the work for quiet moments. */
 @Composable
-fun OfficeCard(onOpenMonitor: () -> Unit, onOpenLab: () -> Unit, modifier: Modifier = Modifier) {
+fun OfficeCard(
+    onOpenMonitor: () -> Unit,
+    onOpenLab: () -> Unit,
+    onOpenWorkbench: () -> Unit,
+    onOpenShop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Panel(modifier, color = PR.White, borderColor = Palette5.PersianBlue) {
         Text("You are at the Office", fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Text("Nothing is ringing. Watch the network and catch problems before the neighbors do.", fontSize = 13.sp, color = PR.Muted)
         PrimaryButton("Open Network Monitor", onClick = onOpenMonitor)
-        SecondaryButton("🔬 Open the Lab", onClick = onOpenLab)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SecondaryButton("🔬 Lab", Modifier.weight(1f), onOpenLab)
+            SecondaryButton("🛠 Workbench", Modifier.weight(1f), onOpenWorkbench)
+            SecondaryButton("🛒 Shop", Modifier.weight(1f), onOpenShop)
+        }
     }
 }
 

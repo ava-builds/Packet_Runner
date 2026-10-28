@@ -37,6 +37,8 @@ data class GameState(
     val todayCaught: Int = 0,
     val todayFalseAlarms: Int = 0,
     val todayBonus: Int = 0,
+    /** Upgrade levels the player bought at the shop (upgrade id to level). */
+    val upgrades: Map<String, Int> = emptyMap(),
     /** Lab games already played for pay today (each pays once a day). */
     val labDone: Set<String> = emptySet(),
     /** Every job solved so far, oldest first. */
@@ -133,7 +135,18 @@ object GameEngine {
             connected = clean.connected,
             upcoming = generator.callsFor(clean.day, neighbors, clean.connected),
             solved = clean.solved,
+            upgrades = clean.upgrades,
         )
+    }
+
+    /** Buys the next level of an upgrade if there is one left and the player can pay. */
+    fun buy(state: GameState, upgradeId: String): GameState {
+        val upgrade = Upgrades.byId(upgradeId) ?: return state
+        val level = state.upgrades[upgradeId] ?: 0
+        if (level >= upgrade.maxLevel) return state
+        val price = upgrade.prices[level]
+        if (state.money < price) return state
+        return state.copy(money = state.money - price, upgrades = state.upgrades + (upgradeId to level + 1))
     }
 
     /** The player finished a Lab game. It pays once per day per game; playing again is just practice. */
