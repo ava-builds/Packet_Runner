@@ -9,7 +9,7 @@ import kotlin.random.Random
  * Rules:
  *  - only neighbors who have already moved in call;
  *  - a neighbor calls at most once a day, and new neighbors always call on their first day;
- *  - City Hall always asks for a ROUTE job; a place without internet asks for an INSTALL, a place with internet asks for a FIX or HELP
+ *  - City Hall always asks for a ROUTE job and the Apartments for a NAT job; a place without internet asks for an INSTALL, a place with internet asks for a FIX or HELP
  *    (day 1 is scripted: installs for new homes, a fix for the others);
  *  - the number of calls grows with the day: 2, 2, 3, 3, 4 (never more than 4);
  *  - calls are spread between 09:00 and 16:00.
@@ -31,6 +31,7 @@ class RequestGenerator(private val seed: Long) {
         return callers.mapIndexed { i, neighbor ->
             val type = when {
                 neighbor.kind == BuildingType.CITY_HALL -> RequestType.ROUTE
+                neighbor.kind == BuildingType.APARTMENTS -> RequestType.NAT
                 neighbor.id !in connected -> RequestType.INSTALL
                 day == 1 -> RequestType.FIX
                 rnd.nextInt(10) < 7 -> RequestType.FIX
@@ -63,6 +64,10 @@ class RequestGenerator(private val seed: Long) {
                 "The city router sends packets to the wrong places! Can you fix its forwarding table?",
                 "Mail for the wrong network keeps arriving. Please check the router's subnet masks.",
             )
+            RequestType.NAT -> listOf(
+                "Our flats share one Internet address and the replies get mixed up! Can you sort out the NAT?",
+                "The tenants complain: some websites work, others never answer. Please look at the router's NAT table.",
+            )
             RequestType.HELP ->
                 if (isShop) listOf("Customers say they can't get an IP address on our Wi-Fi!")
                 else listOf("My new phone can't get internet!", "Our guests can't connect. It says there is no IP address.")
@@ -72,6 +77,6 @@ class RequestGenerator(private val seed: Long) {
 
     companion object {
         const val MAX_CALLS = 4
-        val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100, RequestType.ROUTE to 180)
+        val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100, RequestType.ROUTE to 180, RequestType.NAT to 170)
     }
 }

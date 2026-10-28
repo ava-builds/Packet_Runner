@@ -22,5 +22,6 @@ object Neighbors {
         Neighbor("joon", "Joon", "house2", BuildingType.HOUSE, movesInDay = 2, hasInternetAtStart = false),
         Neighbor("sora", "Sora", "house3", BuildingType.HOUSE, movesInDay = 3, hasInternetAtStart = false),
         Neighbor("dae", "Dae", "cityhall", BuildingType.CITY_HALL, movesInDay = 2, hasInternetAtStart = true),
+        Neighbor("rin", "Rin", "apartments", BuildingType.APARTMENTS, movesInDay = 3, hasInternetAtStart = true),
     )
 }

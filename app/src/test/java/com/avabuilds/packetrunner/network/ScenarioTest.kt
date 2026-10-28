@@ -109,6 +109,7 @@ class ScenarioTest {
             assertEquals(it.name.lowercase(), Scenarios.forRequest(request(it))!!.id.substringBefore('_'))
         }
         assertNull(Scenarios.forRequest(request(RequestType.ROUTE)))
+        assertNull(Scenarios.forRequest(request(RequestType.NAT)))
     }
 
     // ---- Step 5: what devices need, the bigger house, stars ----

@@ -52,8 +52,16 @@ class RequestGeneratorTest {
         val all = neighbors.map { it.id }.toSet()
         for (day in 1..8) {
             calls(day, connected = all).forEach { assertTrue(it.type != RequestType.INSTALL) }
-            calls(day, connected = emptySet()).filter { it.buildingId != "cityhall" }.forEach { assertEquals(RequestType.INSTALL, it.type) }
+            calls(day, connected = emptySet()).filter { it.buildingId != "cityhall" && it.buildingId != "apartments" }.forEach { assertEquals(RequestType.INSTALL, it.type) }
         }
+    }
+
+    @Test fun theApartmentsAlwaysAskForANatJob() {
+        val all = neighbors.map { it.id }.toSet()
+        val calls = (1..10).flatMap { day -> calls(day, connected = all) }.filter { it.buildingId == "apartments" }
+        assertTrue(calls.isNotEmpty())
+        assertTrue(calls.all { it.type == RequestType.NAT })
+        assertTrue(calls.all { it.callMinute >= Clock.CALLS_FROM })
     }
 
     @Test fun cityHallAlwaysAsksForARoutingJob() {

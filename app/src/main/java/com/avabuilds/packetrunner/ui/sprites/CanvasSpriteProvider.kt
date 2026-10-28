@@ -33,6 +33,7 @@ class CanvasSpriteProvider : SpriteProvider {
                 SpriteKey.HOUSE -> drawHouse(sprite)
                 SpriteKey.CAFE -> drawCafe(sprite)
                 SpriteKey.CITY_HALL -> drawCityHall(sprite)
+                SpriteKey.APARTMENTS -> drawApartments(sprite)
                 SpriteKey.PLAYER -> drawPlayer(sprite.anchor, tw)
             }
         }
@@ -212,4 +213,30 @@ private fun DrawScope.drawCityHall(sprite: Sprite) {
         Path().apply { moveTo(top.x, top.y); lineTo(top.x + tw * 0.22f, top.y + tw * 0.06f); lineTo(top.x, top.y + tw * 0.12f); close() },
         Palette5.PersianBlue,
     )
+}
+
+private fun DrawScope.drawApartments(sprite: Sprite) {
+    val tw = sprite.tileWidth
+    val w = sprite.size * tw * BUILDING_INSET
+    val walls = Walls(sprite.anchor, w, w / 2, BuildingType.APARTMENTS.heightInTiles() * tw)
+    drawIsoBox(sprite.anchor, w, w / 2, walls.height, top = Color(0xFF8E4B3E), left = Color(0xFFD08A6E), right = Color(0xFFE5A184))
+
+    // Three floors of small windows with a balcony rail under each row, the ground floor left for the door
+    for (floor in 1..3) {
+        val v0 = 0.08f + floor * 0.22f
+        for (col in 0 until 2) {
+            val u0 = 0.14f + col * 0.42f
+            fillOnWall(walls::left, u0, u0 + 0.26f, v0, v0 + 0.12f, TownColors.Window)
+            fillOnWall(walls::right, u0, u0 + 0.26f, v0, v0 + 0.12f, TownColors.Window)
+        }
+        fillOnWall(walls::left, 0.06f, 0.94f, v0 - 0.035f, v0 - 0.01f, Palette5.DuskBlue)
+        fillOnWall(walls::right, 0.06f, 0.94f, v0 - 0.035f, v0 - 0.01f, Palette5.DuskBlue)
+    }
+    drawDoor(walls, sprite, Palette5.DeepNavy)
+
+    // A satellite dish on the roof
+    val roof = sprite.anchor - Offset(0f, walls.height)
+    drawCircle(Color.White, tw * 0.09f, roof - Offset(0f, tw * 0.1f))
+    drawCircle(Palette5.DuskBlue, tw * 0.09f, roof - Offset(0f, tw * 0.1f), style = Stroke(tw * 0.015f))
+    drawLine(Palette5.DeepNavy, roof, roof - Offset(0f, tw * 0.1f), strokeWidth = tw * 0.02f)
 }

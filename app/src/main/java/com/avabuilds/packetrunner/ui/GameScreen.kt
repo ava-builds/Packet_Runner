@@ -34,6 +34,8 @@ import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.game.Town
 import com.avabuilds.packetrunner.network.Concept
 import com.avabuilds.packetrunner.network.LabGame
+import com.avabuilds.packetrunner.network.NatPuzzle
+import com.avabuilds.packetrunner.network.NatPuzzles
 import com.avabuilds.packetrunner.network.RoutingPuzzle
 import com.avabuilds.packetrunner.network.RoutingPuzzles
 import com.avabuilds.packetrunner.network.Scenario
@@ -45,6 +47,7 @@ import com.avabuilds.packetrunner.ui.lab.LabGameShell
 import com.avabuilds.packetrunner.ui.lab.LabMenu
 import com.avabuilds.packetrunner.ui.lab.WindowGame
 import com.avabuilds.packetrunner.ui.notebook.NotebookPanel
+import com.avabuilds.packetrunner.ui.scene.NatScreen
 import com.avabuilds.packetrunner.ui.scene.RoutingScreen
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
@@ -80,6 +83,7 @@ fun GameScreen(
     var saveMark by remember { mutableStateOf("") } // cloud mark: ... while saving, a tick when stored, ! when it failed
     var showNotebook by remember { mutableStateOf(false) }
     var showAccount by remember { mutableStateOf(false) }
+    var nat by remember { mutableStateOf<NatPuzzle?>(null) } // the Apartments NAT job, if open
     var routing by remember { mutableStateOf<RoutingPuzzle?>(null) } // the City Hall router job, if open
     var labMenuOpen by remember { mutableStateOf(false) }
     var labGame by remember { mutableStateOf<LabGame?>(null) }
@@ -93,7 +97,7 @@ fun GameScreen(
             delay(200)
             val now = System.nanoTime()
             // The day clock waits while the player is inside a room, working
-            if (scenario == null && routing == null && !labMenuOpen && labGame == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
+            if (scenario == null && routing == null && nat == null && !labMenuOpen && labGame == null) state = GameEngine.advance(state, (now - last) / 1_000_000_000f)
             last = now
         }
     }
@@ -173,6 +177,8 @@ fun GameScreen(
                         onStart = {
                             if (active.type == RequestType.ROUTE) {
                                 routing = RoutingPuzzles.forJob(state.solved.count { it.type == RequestType.ROUTE })
+                            } else if (active.type == RequestType.NAT) {
+                                nat = NatPuzzles.forJob(state.solved.count { it.type == RequestType.NAT })
                             } else {
                                 scenario = Scenarios.forRequest(active)
                             }
@@ -267,6 +273,27 @@ fun GameScreen(
             }
         } else if (labMenuOpen) {
             LabMenu(doneToday = state.labDone, onPick = { labGame = it }, onClose = { labMenuOpen = false })
+        }
+
+        val natJob = nat
+        if (natJob != null && active != null) {
+            val neighbor = neighbors.first { it.id == active.neighborId }
+            NatScreen(
+                puzzle = natJob,
+                tenantName = neighbor.name,
+                reward = active.reward,
+                onSaveToNotebook = { title, concepts -> saveConceptsAsNote(title, concepts) },
+                onFinish = { success, payout, stars ->
+                    nat = null
+                    if (success) {
+                        toast = "+₩$payout · ${"★".repeat(stars)} · ${neighbor.name} is happier"
+                        state = GameEngine.complete(state, solved = true, payout = payout, bonusHearts = if (stars == 3) 1 else 0)
+                    } else {
+                        toast = "${neighbor.name} is unhappy. −₩50"
+                        state = GameEngine.complete(state, solved = false)
+                    }
+                },
+            )
         }
 
         val puzzle = routing

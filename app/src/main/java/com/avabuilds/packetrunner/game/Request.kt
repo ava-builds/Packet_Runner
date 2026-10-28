@@ -6,6 +6,7 @@ enum class RequestType(val label: String) {
     FIX("Fix"),
     HELP("Help"),
     ROUTE("Route"),
+    NAT("Address"),
 }
 
 /** A phone call from a neighbor. [callMinute] is the time of day when the phone rings. */

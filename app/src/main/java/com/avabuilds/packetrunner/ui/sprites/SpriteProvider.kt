@@ -8,7 +8,7 @@ import com.avabuilds.packetrunner.game.isoBoxSilhouette
 import com.avabuilds.packetrunner.game.DoorSide
 
 /** Everything the town can draw. Each key is one sprite; later a PNG can replace any of them. */
-enum class SpriteKey { GRASS_LIGHT, GRASS_DARK, ROAD, TREE, OFFICE, HOUSE, CAFE, CITY_HALL, PLAYER }
+enum class SpriteKey { GRASS_LIGHT, GRASS_DARK, ROAD, TREE, OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS, PLAYER }
 
 /**
  * One thing to draw. [anchor] is the on-screen center of its ground diamond (for a building, the
@@ -50,6 +50,7 @@ fun BuildingType.spriteKey(): SpriteKey = when (this) {
     BuildingType.HOUSE -> SpriteKey.HOUSE
     BuildingType.CAFE -> SpriteKey.CAFE
     BuildingType.CITY_HALL -> SpriteKey.CITY_HALL
+    BuildingType.APARTMENTS -> SpriteKey.APARTMENTS
 }
 
 /** How tall a building is drawn, in tile widths (a house includes its roof). */
@@ -58,6 +59,7 @@ fun BuildingType.heightInTiles(): Float = when (this) {
     BuildingType.HOUSE -> 1.15f
     BuildingType.CAFE -> 0.85f
     BuildingType.CITY_HALL -> 1.0f
+    BuildingType.APARTMENTS -> 1.7f
 }
 
 /** Where a building's name label floats, in tile widths above its ground (clear of roofs and antennas). */
@@ -66,6 +68,7 @@ fun BuildingType.labelHeightInTiles(): Float = when (this) {
     BuildingType.HOUSE -> 1.4f
     BuildingType.CAFE -> 1.6f
     BuildingType.CITY_HALL -> 2.5f
+    BuildingType.APARTMENTS -> 2.3f
 }
 
 /** A building's walls are drawn a little smaller than its footprint, so neighbors do not touch. */

@@ -193,6 +193,21 @@ object Concepts {
         "The sender may have a window of frames in flight before the first acknowledgement returns. A window as large as the delay times the bandwidth keeps the pipe full.",
         "Getting Connected · Reliable transmission (sliding window)",
     )
+    val PRIVATE_ADDRESSES = Concept(
+        "Private addresses", "사설 주소",
+        "Addresses such as 192.168.x.x are used only inside a home or building. They are not routed on the Internet, so many places can reuse the same ones.",
+        "Internetworking · Network address translation (NAT)",
+    )
+    val NAT_TABLE = Concept(
+        "NAT translation table", "NAT 변환 테이블",
+        "A NAT router rewrites each outgoing packet to use the one public address and a port of its own, and writes the pair into a table. Replies are matched against the table to find the right device. A packet nobody asked for has no row and is dropped.",
+        "Internetworking · Network address translation (NAT)",
+    )
+    val PORT_FORWARDING = Concept(
+        "Port forwarding", "포트 포워딩",
+        "To let outsiders reach a server inside, you add a fixed row to the NAT table: this public port always goes to that device.",
+        "Internetworking · Network address translation (NAT)",
+    )
     val ACCESS_POINT = Concept(
         "Access point", "액세스 포인트 (AP)",
         "An access point adds Wi-Fi to a wired network. It needs a cable to the router, and it does not hand out IP addresses itself.",
@@ -206,7 +221,7 @@ val Concepts.all: List<Concept>
         Concepts.ROUTER, Concepts.CABLE, Concepts.WIFI_RANGE, Concepts.BANDWIDTH_LATENCY, Concepts.HIDDEN_NODE,
         Concepts.RTS_CTS, Concepts.COLLISION_AVOIDANCE, Concepts.APP_NEEDS, Concepts.REPEATER, Concepts.DHCP_POOL,
         Concepts.DHCP_LEASE, Concepts.ACCESS_POINT, Concepts.FORWARDING_TABLE, Concepts.SUBNET_MASK,
-        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW,
+        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW, Concepts.PRIVATE_ADDRESSES, Concepts.NAT_TABLE, Concepts.PORT_FORWARDING,
     )
 
 object Scenarios {
@@ -389,6 +404,6 @@ object Scenarios {
         RequestType.INSTALL -> install(request.buildingId)
         RequestType.FIX -> fix(request.buildingId)
         RequestType.HELP -> help(request.buildingId)
-        RequestType.ROUTE -> null // the forwarding-table job has its own screen (RoutingScreen)
+        RequestType.ROUTE, RequestType.NAT -> null // these jobs have their own screens (RoutingScreen, NatScreen)
     }
 }
