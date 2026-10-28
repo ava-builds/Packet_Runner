@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,7 +39,7 @@ import com.avabuilds.packetrunner.ui.PrimaryButton
  */
 @Composable
 fun EncodingGame(onSuccess: () -> Unit) {
-    var round by remember { mutableStateOf(0) }
+    var round by remember { mutableIntStateOf(0) }
     val spec = EncodingRounds.all[round]
     val drawn = remember(round) { mutableStateListOf(*Array(spec.bits.length * 2) { false }) }
     var wrong by remember(round) { mutableStateOf<List<Int>>(emptyList()) }

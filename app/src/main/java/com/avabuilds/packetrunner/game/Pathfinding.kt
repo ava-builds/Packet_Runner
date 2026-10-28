@@ -31,7 +31,7 @@ object Pathfinding {
         open.add(Entry(start, 0, heuristic(start), counter++))
 
         while (open.isNotEmpty()) {
-            val current = open.poll()
+            val current = open.poll() ?: break
             if (current.tile in closed) continue // an older, worse entry for a finished tile
             if (current.tile == goal) return rebuild(cameFrom, goal)
             closed.add(current.tile)
