@@ -39,12 +39,12 @@ fun heartsText(hearts: Int) = "♥".repeat(hearts) + "♡".repeat(MAX_HEARTS - h
 
 /**
  * Day and time, money and a button for the friends list: the strip at the top of the screen.
- * Long-pressing the day is a developer shortcut that jumps to the evening, to try later days quickly.
+ * In debug builds, long-pressing the day jumps to the evening (pass null to switch this off).
  */
 @Composable
-fun StatusPills(state: GameState, onFriends: () -> Unit, onSkipDay: () -> Unit, playerName: String? = null, onAccount: () -> Unit = {}, onNotebook: () -> Unit = {}) {
+fun StatusPills(state: GameState, onFriends: () -> Unit, onSkipDay: (() -> Unit)?, playerName: String? = null, onAccount: () -> Unit = {}, onNotebook: () -> Unit = {}) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.combinedClickable(onClick = {}, onLongClick = onSkipDay)) {
+        Box(if (onSkipDay != null) Modifier.combinedClickable(onClick = {}, onLongClick = onSkipDay) else Modifier) {
             Pill("Day ${state.day} · ${formatTime(state.minute)}", PR.White, PR.Ink)
         }
         Pill("₩ ${state.money}", PR.Amber50, PR.Amber800)

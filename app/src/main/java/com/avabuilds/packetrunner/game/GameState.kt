@@ -37,6 +37,10 @@ data class GameState(
     val todayCaught: Int = 0,
     val todayFalseAlarms: Int = 0,
     val todayBonus: Int = 0,
+    /** Seed of this game's calls: every new game gets its own, and the save keeps it so a reload sees the same days. */
+    val seed: Long = RequestGenerator.DEFAULT_SEED,
+    /** Ids of today's calls that have already rung, so a reload does not ring them again. */
+    val rungToday: Set<Int> = emptySet(),
     /** Upgrade levels the player bought at the shop (upgrade id to level). */
     val upgrades: Map<String, Int> = emptyMap(),
     /** Lab games already played for pay today (each pays once a day). */
@@ -58,6 +62,7 @@ object GameEngine {
             hearts = neighbors.associate { it.id to 0 },
             connected = connected,
             upcoming = generator.callsFor(1, neighbors, connected),
+            seed = generator.seed,
         )
     }
 
@@ -70,7 +75,7 @@ object GameEngine {
         if (s.ringing == null && s.active == null) {
             val next = s.upcoming.firstOrNull()
             if (next != null && next.callMinute <= s.minute) {
-                s = s.copy(ringing = next, ringingSince = s.minute, upcoming = s.upcoming.drop(1))
+                s = s.copy(ringing = next, ringingSince = s.minute, upcoming = s.upcoming.drop(1), rungToday = s.rungToday + next.id)
             }
         }
         if (s.ringing != null && s.minute - s.ringingSince >= RING_TIMEOUT_MINUTES) s = ignore(s)
@@ -133,9 +138,13 @@ object GameEngine {
             money = clean.money,
             hearts = neighbors.associate { it.id to (clean.hearts[it.id] ?: 0) },
             connected = clean.connected,
-            upcoming = generator.callsFor(clean.day, neighbors, clean.connected),
+            upcoming = generator.callsFor(clean.day, neighbors, clean.connected).filter { it.id !in clean.rungToday },
             solved = clean.solved,
             upgrades = clean.upgrades,
+            seed = generator.seed,
+            rungToday = clean.rungToday,
+            labDone = clean.labDone,
+            caught = clean.caught,
         )
     }
 
@@ -177,6 +186,7 @@ object GameEngine {
             todayMissed = 0,
             todayFailed = 0,
             caught = emptySet(),
+            rungToday = emptySet(),
             labDone = emptySet(),
             todayCaught = 0,
             todayFalseAlarms = 0,

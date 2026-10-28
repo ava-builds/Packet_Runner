@@ -38,6 +38,10 @@ The 📓 pill opens your notebook: create, read, search, edit and delete notes. 
 `players/{uid}/notes` (the same rules cover them). After a job, the "What you just did" card can save the concepts you used as a note.
 Without an account the notebook works too, but only until you close the app.
 
+## Debug shortcut
+
+In debug builds (not in a release build), long-pressing the "Day" pill jumps to the evening, which makes it quick to try later days.
+
 ## Tests
 
 ```

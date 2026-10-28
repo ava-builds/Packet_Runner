@@ -91,3 +91,69 @@ class SaveDataTest {
         assertEquals(neighbors.map { it.id }.toSet(), restored.hearts.keys)
     }
 }
+
+class ReloadTest {
+    private val neighbors = Neighbors.default()
+    private val generator = RequestGenerator(2026L)
+
+    private fun playUntilFirstCallRings(): GameState {
+        var s = GameEngine.newGame(neighbors, generator)
+        while (s.ringing == null) s = GameEngine.advance(s, 1f)
+        return s
+    }
+
+    @Test fun aCallThatAlreadyRangDoesNotRingAgainAfterALoad() {
+        val s = playUntilFirstCallRings()
+        val ringingId = s.ringing!!.id
+        assertTrue(ringingId in s.rungToday)
+        val back = GameEngine.restore(SaveData.fromMap(SaveData.from(s).toMap()), neighbors, generator)
+        assertTrue(back.upcoming.none { it.id == ringingId })
+        assertEquals(s.upcoming.map { it.id }, back.upcoming.map { it.id })
+    }
+
+    @Test fun aLabGamePaidTodayIsStillPaidAfterALoad() {
+        val s = GameEngine.completeLab(GameEngine.newGame(neighbors, generator), "crc", 60)
+        val back = GameEngine.restore(SaveData.fromMap(SaveData.from(s).toMap()), neighbors, generator)
+        assertEquals(setOf("crc"), back.labDone)
+        assertEquals(back, GameEngine.completeLab(back, "crc", 60))
+    }
+
+    @Test fun aMonitorBonusAlreadyCollectedIsNotCollectedAgainAfterALoad() {
+        val s = GameEngine.newGame(neighbors, generator).copy(caught = setOf(101))
+        val back = GameEngine.restore(SaveData.fromMap(SaveData.from(s).toMap()), neighbors, generator)
+        assertEquals(setOf(101), back.caught)
+    }
+
+    @Test fun aFinishedDaySavesAsAFreshMorningWithNothingDoneYet() {
+        val s = GameEngine.completeLab(GameEngine.newGame(neighbors, generator), "crc", 60).copy(minute = Clock.DAY_END, rungToday = setOf(100, 101))
+        val save = SaveData.from(s)
+        assertEquals(2, save.day)
+        assertTrue(save.labDone.isEmpty() && save.rungToday.isEmpty() && save.caught.isEmpty())
+    }
+
+    @Test fun theSeedSurvivesTheSaveAndKeepsTheSameDays() {
+        val mine = RequestGenerator(987654321L)
+        val s = GameEngine.newGame(neighbors, mine)
+        assertEquals(987654321L, s.seed)
+        val save = SaveData.fromMap(SaveData.from(s).toMap())
+        assertEquals(987654321L, save.seed)
+        val back = GameEngine.restore(save, neighbors, RequestGenerator(save.seed))
+        assertEquals(s.upcoming, back.upcoming)
+        assertEquals(987654321L, back.seed)
+    }
+
+    @Test fun differentSeedsGiveDifferentWeeks() {
+        val a = RequestGenerator(1L)
+        val b = RequestGenerator(2L)
+        val connected = neighbors.map { it.id }.toSet()
+        val differ = (1..6).any { a.callsFor(it, neighbors, connected) != b.callsFor(it, neighbors, connected) }
+        assertTrue(differ)
+    }
+
+    @Test fun anOldSaveWithoutTheNewFieldsStillLoadsWithTheOldSeed() {
+        val old = mapOf("day" to 3, "money" to 600, "hearts" to mapOf("mina" to 2), "connected" to listOf("mina"))
+        val save = SaveData.fromMap(old)
+        assertEquals(RequestGenerator.DEFAULT_SEED, save.seed)
+        assertTrue(save.labDone.isEmpty() && save.rungToday.isEmpty())
+    }
+}

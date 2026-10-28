@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -15,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +60,7 @@ import com.avabuilds.packetrunner.ui.scene.NatScreen
 import com.avabuilds.packetrunner.ui.scene.RoutingScreen
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
+import kotlin.random.Random
 
 /** The notebook owner when nobody is logged in (playing without an account). */
 private const val LOCAL_UID = "local"
@@ -77,9 +80,11 @@ fun GameScreen(
     onLoggedOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDebugBuild = (LocalContext.current.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     val town = remember { Town.default() }
     val neighbors = remember { Neighbors.default() }
-    val generator = remember { RequestGenerator(seed = 2026L) } // fixed seed so every run is the same while we build
+    // A new game gets a random seed; a loaded game keeps its own, so the same days come back
+    val generator = remember { RequestGenerator(seed = initialSave?.seed ?: Random.nextLong()) }
     val controller = remember { TownController(town) }
     var state by remember {
         mutableStateOf(if (initialSave != null) GameEngine.restore(initialSave, neighbors, generator) else GameEngine.newGame(neighbors, generator))
@@ -148,7 +153,8 @@ fun GameScreen(
             StatusPills(
                 state,
                 onFriends = { showFriends = !showFriends },
-                onSkipDay = { state = GameEngine.skipToEvening(state) },
+                // the developer shortcut (long-press the day) exists only in debug builds
+                onSkipDay = if (isDebugBuild) ({ state = GameEngine.skipToEvening(state) }) else null,
                 playerName = user?.let { "${it.nickname} $saveMark".trim() },
                 onAccount = { showAccount = !showAccount },
                 onNotebook = { showNotebook = !showNotebook; if (showNotebook) monitorOpen = false },

@@ -14,7 +14,7 @@ import kotlin.random.Random
  *  - the number of calls grows with the day: 2, 2, 3, 3, 4 (never more than 4);
  *  - calls are spread between 09:00 and 16:00.
  */
-class RequestGenerator(private val seed: Long) {
+class RequestGenerator(val seed: Long) {
 
     fun callsFor(day: Int, neighbors: List<Neighbor>, connected: Set<String>): List<Request> {
         val rnd = Random(seed * 1_000_003L + day)
@@ -76,6 +76,8 @@ class RequestGenerator(private val seed: Long) {
     }
 
     companion object {
+        /** The seed of saves made before every game got its own. */
+        const val DEFAULT_SEED = 2026L
         const val MAX_CALLS = 4
         val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100, RequestType.ROUTE to 180, RequestType.NAT to 170)
     }
