@@ -208,6 +208,16 @@ object Concepts {
         "To let outsiders reach a server inside, you add a fixed row to the NAT table: this public port always goes to that device.",
         "Internetworking · Network address translation (NAT)",
     )
+    val CSMA_CD = Concept(
+        "Ethernet collisions (CSMA/CD)", "이더넷 충돌 (CSMA/CD)",
+        "On a shared cable, two senders can talk at once. Ethernet listens while it sends, notices the collision, and each sender waits a random time (backoff) before trying again. The wait range doubles after every collision.",
+        "Getting Connected · Ethernet (CSMA/CD)",
+    )
+    val LEARNING_BRIDGE = Concept(
+        "Switch and learning bridge", "스위치와 학습 브리지",
+        "A hub repeats every frame to everyone. A switch learns which port each address is on from the frames it sees, then forwards a frame only to the right port. It floods only when it does not know the destination yet.",
+        "Internetworking · Switches and learning bridges",
+    )
     val ACCESS_POINT = Concept(
         "Access point", "액세스 포인트 (AP)",
         "An access point adds Wi-Fi to a wired network. It needs a cable to the router, and it does not hand out IP addresses itself.",
@@ -221,7 +231,7 @@ val Concepts.all: List<Concept>
         Concepts.ROUTER, Concepts.CABLE, Concepts.WIFI_RANGE, Concepts.BANDWIDTH_LATENCY, Concepts.HIDDEN_NODE,
         Concepts.RTS_CTS, Concepts.COLLISION_AVOIDANCE, Concepts.APP_NEEDS, Concepts.REPEATER, Concepts.DHCP_POOL,
         Concepts.DHCP_LEASE, Concepts.ACCESS_POINT, Concepts.FORWARDING_TABLE, Concepts.SUBNET_MASK,
-        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW, Concepts.PRIVATE_ADDRESSES, Concepts.NAT_TABLE, Concepts.PORT_FORWARDING,
+        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW, Concepts.PRIVATE_ADDRESSES, Concepts.NAT_TABLE, Concepts.PORT_FORWARDING, Concepts.CSMA_CD, Concepts.LEARNING_BRIDGE,
     )
 
 object Scenarios {

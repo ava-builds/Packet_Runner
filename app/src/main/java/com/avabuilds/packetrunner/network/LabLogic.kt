@@ -183,12 +183,14 @@ object WindowRounds {
 enum class LabGame(val id: String, val title: String, val blurb: String, val reward: Int) {
     CRC("crc", "Find the corrupted frame", "Divide frames by the generator and catch the ones the wire damaged.", 60),
     ENCODING("encoding", "Draw the signal", "Turn bits into a wave with NRZ, NRZI and Manchester.", 50),
-    WINDOW("window", "Fill the pipe", "Choose the window size that keeps the link busy.", 50);
+    WINDOW("window", "Fill the pipe", "Choose the window size that keeps the link busy.", 50),
+    LAN("lan", "From hub to switch", "Watch a hub waste frames and collide, then let a switch learn.", 80);
 
     val concepts: List<Concept>
         get() = when (this) {
             CRC -> listOf(Concepts.CRC)
             ENCODING -> listOf(Concepts.LINE_ENCODING)
             WINDOW -> listOf(Concepts.SLIDING_WINDOW)
+            LAN -> listOf(Concepts.CSMA_CD, Concepts.LEARNING_BRIDGE)
         }
 }
