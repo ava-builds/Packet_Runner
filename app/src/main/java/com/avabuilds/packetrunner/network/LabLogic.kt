@@ -184,7 +184,9 @@ enum class LabGame(val id: String, val title: String, val blurb: String, val rew
     CRC("crc", "Find the corrupted frame", "Divide frames by the generator and catch the ones the wire damaged.", 60),
     ENCODING("encoding", "Draw the signal", "Turn bits into a wave with NRZ, NRZI and Manchester.", 50),
     WINDOW("window", "Fill the pipe", "Choose the window size that keeps the link busy.", 50),
-    LAN("lan", "From hub to switch", "Watch a hub waste frames and collide, then let a switch learn.", 80);
+    LAN("lan", "From hub to switch", "Watch a hub waste frames and collide, then let a switch learn.", 80),
+    MOBILE("mobile", "Follow the driver", "Keep reaching a delivery driver who moves from network to network.", 70),
+    TRANSPORT("transport", "Streamer or bank?", "Choose UDP or TCP for four apps and see who suffers.", 70);
 
     val concepts: List<Concept>
         get() = when (this) {
@@ -192,5 +194,7 @@ enum class LabGame(val id: String, val title: String, val blurb: String, val rew
             ENCODING -> listOf(Concepts.LINE_ENCODING)
             WINDOW -> listOf(Concepts.SLIDING_WINDOW)
             LAN -> listOf(Concepts.CSMA_CD, Concepts.LEARNING_BRIDGE)
+            MOBILE -> listOf(Concepts.MOBILE_IP)
+            TRANSPORT -> listOf(Concepts.UDP_TCP)
         }
 }

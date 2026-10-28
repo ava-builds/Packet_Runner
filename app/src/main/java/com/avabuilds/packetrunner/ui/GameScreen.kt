@@ -45,6 +45,8 @@ import com.avabuilds.packetrunner.ui.lab.CrcGame
 import com.avabuilds.packetrunner.ui.lab.EncodingGame
 import com.avabuilds.packetrunner.ui.lab.LabGameShell
 import com.avabuilds.packetrunner.ui.lab.LanGame
+import com.avabuilds.packetrunner.ui.lab.MobileIpGame
+import com.avabuilds.packetrunner.ui.lab.TransportGame
 import com.avabuilds.packetrunner.ui.lab.LabMenu
 import com.avabuilds.packetrunner.ui.lab.WindowGame
 import com.avabuilds.packetrunner.ui.notebook.NotebookPanel
@@ -271,6 +273,8 @@ fun GameScreen(
                     LabGame.ENCODING -> EncodingGame(onSuccess)
                     LabGame.WINDOW -> WindowGame(onSuccess)
                     LabGame.LAN -> LanGame(onSuccess)
+                    LabGame.MOBILE -> MobileIpGame(onSuccess)
+                    LabGame.TRANSPORT -> TransportGame(onSuccess)
                 }
             }
         } else if (labMenuOpen) {

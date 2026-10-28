@@ -218,6 +218,16 @@ object Concepts {
         "A hub repeats every frame to everyone. A switch learns which port each address is on from the frames it sees, then forwards a frame only to the right port. It floods only when it does not know the destination yet.",
         "Internetworking · Switches and learning bridges",
     )
+    val MOBILE_IP = Concept(
+        "Mobile IP", "모바일 IP",
+        "A moving device keeps its home address. At a new network it gets a temporary care-of address and tells its home agent. The home agent tunnels packets for the home address to the care-of address, where the outer header is removed.",
+        "Internetworking · Mobility and Mobile IP",
+    )
+    val UDP_TCP = Concept(
+        "UDP or TCP", "UDP와 TCP",
+        "UDP just sends: fast, but lost data stays lost. TCP resends lost data and delivers it in order, so everything arrives, but a loss makes everything behind it wait. Live video and calls want UDP; banks and file transfers want TCP.",
+        "End-to-End Protocols · UDP and TCP",
+    )
     val ACCESS_POINT = Concept(
         "Access point", "액세스 포인트 (AP)",
         "An access point adds Wi-Fi to a wired network. It needs a cable to the router, and it does not hand out IP addresses itself.",
@@ -231,7 +241,7 @@ val Concepts.all: List<Concept>
         Concepts.ROUTER, Concepts.CABLE, Concepts.WIFI_RANGE, Concepts.BANDWIDTH_LATENCY, Concepts.HIDDEN_NODE,
         Concepts.RTS_CTS, Concepts.COLLISION_AVOIDANCE, Concepts.APP_NEEDS, Concepts.REPEATER, Concepts.DHCP_POOL,
         Concepts.DHCP_LEASE, Concepts.ACCESS_POINT, Concepts.FORWARDING_TABLE, Concepts.SUBNET_MASK,
-        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW, Concepts.PRIVATE_ADDRESSES, Concepts.NAT_TABLE, Concepts.PORT_FORWARDING, Concepts.CSMA_CD, Concepts.LEARNING_BRIDGE,
+        Concepts.LONGEST_PREFIX, Concepts.DEFAULT_ROUTE, Concepts.CRC, Concepts.LINE_ENCODING, Concepts.SLIDING_WINDOW, Concepts.PRIVATE_ADDRESSES, Concepts.NAT_TABLE, Concepts.PORT_FORWARDING, Concepts.CSMA_CD, Concepts.LEARNING_BRIDGE, Concepts.MOBILE_IP, Concepts.UDP_TCP,
     )
 
 object Scenarios {
