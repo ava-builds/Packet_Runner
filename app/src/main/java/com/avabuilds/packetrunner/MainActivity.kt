@@ -1,5 +1,6 @@
 package com.avabuilds.packetrunner
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +24,8 @@ import com.avabuilds.packetrunner.data.NotebookRepository
 import com.avabuilds.packetrunner.data.SaveRepository
 import com.avabuilds.packetrunner.game.SaveData
 import com.avabuilds.packetrunner.data.UserProfile
+import com.avabuilds.packetrunner.notify.AppVisibility
+import com.avabuilds.packetrunner.notify.CallNotifications
 import com.avabuilds.packetrunner.ui.GameScreen
 import com.avabuilds.packetrunner.ui.PR
 import com.avabuilds.packetrunner.ui.SaveGate
@@ -31,8 +34,28 @@ import com.avabuilds.packetrunner.ui.auth.FirebaseNotConfiguredScreen
 import com.avabuilds.packetrunner.ui.theme.PacketRunnerTheme
 
 class MainActivity : ComponentActivity() {
+    /** The call the player opened from a notification, until the game has dealt with it. */
+    private var openCallId by mutableStateOf<Int?>(null)
+
+    override fun onStart() {
+        super.onStart()
+        AppVisibility.inForeground = true
+    }
+
+    override fun onStop() {
+        AppVisibility.inForeground = false
+        super.onStop()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openCallId = intent.getIntExtra(CallNotifications.EXTRA_CALL_ID, -1).takeIf { it >= 0 }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CallNotifications.createChannel(this)
+        openCallId = intent?.getIntExtra(CallNotifications.EXTRA_CALL_ID, -1)?.takeIf { it >= 0 }
         enableEdgeToEdge()
         val firebaseReady = FirebaseAuthRepository.isConfigured(this)
         val auth: AuthRepository? = if (firebaseReady) FirebaseAuthRepository() else null
@@ -64,7 +87,10 @@ class MainActivity : ComponentActivity() {
                                     initialSave = save,
                                     onUserChanged = { user = it },
                                     onLoggedOut = { user = null },
-                                    modifier = modifier,
+                                    openCallId = openCallId,
+                                    onCallOpened = { openCallId = null },
+                                    modifier = Modifier,
+                                    contentPadding = innerPadding,
                                 )
                             }
                             if (signedIn != null && saves != null) {

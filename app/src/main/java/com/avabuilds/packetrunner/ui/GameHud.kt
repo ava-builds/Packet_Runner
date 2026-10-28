@@ -37,23 +37,6 @@ import com.avabuilds.packetrunner.game.formatTime
 /** "♥♥♡♡♡" */
 fun heartsText(hearts: Int) = "♥".repeat(hearts) + "♡".repeat(MAX_HEARTS - hearts)
 
-/**
- * Day and time, money and a button for the friends list: the strip at the top of the screen.
- * In debug builds, long-pressing the day jumps to the evening (pass null to switch this off).
- */
-@Composable
-fun StatusPills(state: GameState, onFriends: () -> Unit, onSkipDay: (() -> Unit)?, playerName: String? = null, onAccount: () -> Unit = {}, onNotebook: () -> Unit = {}) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(if (onSkipDay != null) Modifier.combinedClickable(onClick = {}, onLongClick = onSkipDay) else Modifier) {
-            Pill("Day ${state.day} · ${formatTime(state.minute)}", PR.White, PR.Ink)
-        }
-        Pill("₩ ${state.money}", PR.Amber50, PR.Amber800)
-        Box(Modifier.clickable(onClick = onFriends)) { Pill("♥ Friends", PR.Red50, PR.Red800) }
-        Box(Modifier.clickable(onClick = onNotebook)) { Pill("📓", PR.Blue50, PR.Blue800) }
-        if (playerName != null) Box(Modifier.clickable(onClick = onAccount)) { Pill("👤 $playerName", PR.Blue50, PR.Blue800) }
-    }
-}
-
 /** A ringing phone: it shakes and sends out signal arcs. */
 @Composable
 fun PhoneIcon(modifier: Modifier = Modifier) {
@@ -151,15 +134,23 @@ fun OfficeCard(
     onOpenWorkbench: () -> Unit,
     onOpenShop: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The clock in / clock out button (shown when it makes sense). */
+    clockButton: @Composable () -> Unit = {},
+    voicemails: Int = 0,
+    onOpenVoicemail: () -> Unit = {},
+    onOpenTopic: () -> Unit = {},
 ) {
     Panel(modifier, color = PR.White, borderColor = Palette5.PersianBlue) {
         Text("You are at the Office", fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Text("Nothing is ringing. Watch the network and catch problems before the neighbors do.", fontSize = 13.sp, color = PR.Muted)
+        clockButton()
+        if (voicemails > 0) SecondaryButton("📨 Voicemail ($voicemails)", onClick = onOpenVoicemail)
         PrimaryButton("Open Network Monitor", onClick = onOpenMonitor)
+        SecondaryButton("📚 Weekly topic", onClick = onOpenTopic)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SecondaryButton("🔬 Lab", Modifier.weight(1f), onOpenLab)
-            SecondaryButton("🛠 Workbench", Modifier.weight(1f), onOpenWorkbench)
-            SecondaryButton("🛒 Shop", Modifier.weight(1f), onOpenShop)
+            SecondaryButtonSized("🔬 Lab", 14.sp, Modifier.weight(1f), onOpenLab)
+            SecondaryButtonSized("🛠 Bench", 14.sp, Modifier.weight(1f), onOpenWorkbench)
+            SecondaryButtonSized("🛒 Shop", 14.sp, Modifier.weight(1f), onOpenShop)
         }
     }
 }

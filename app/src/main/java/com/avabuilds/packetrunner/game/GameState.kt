@@ -37,6 +37,12 @@ data class GameState(
     val todayCaught: Int = 0,
     val todayFalseAlarms: Int = 0,
     val todayBonus: Int = 0,
+    /** Missed calls waiting in the voicemail inbox. They can be returned until clock-out. */
+    val voicemails: List<Request> = emptyList(),
+    /** Calls answered quickly today (for the day's summary). */
+    val todayQuickAnswers: Int = 0,
+    /** Experience points: they decide the engineer's level. */
+    val xp: Int = 0,
     /** Seed of this game's calls: every new game gets its own, and the save keeps it so a reload sees the same days. */
     val seed: Long = RequestGenerator.DEFAULT_SEED,
     /** Ids of today's calls that have already rung, so a reload does not ring them again. */
@@ -88,16 +94,112 @@ object GameEngine {
         return s
     }
 
+    /** In real-time mode an unanswered call rings for this many minutes of the clock before it is missed. */
+    const val WORK_RING_TIMEOUT_MINUTES = 30f
+
+    /**
+     * Follows the real (or demo) clock instead of the game's own: [minute] is the minute of the day, kept inside
+     * the game day. The phone rings only when [canRing] is true (the engineer is working) and the player is free.
+     * The day never ends by itself here; it ends when the work day does.
+     */
+    fun syncTo(state: GameState, minute: Float, canRing: Boolean): GameState {
+        var s = state.copy(minute = minute.coerceIn(Clock.DAY_START, Clock.DAY_END - 1f))
+        if (canRing && s.ringing == null && s.active == null) {
+            val next = s.upcoming.firstOrNull()
+            if (next != null && next.callMinute <= s.minute) {
+                s = s.copy(ringing = next, ringingSince = s.minute, upcoming = s.upcoming.drop(1), rungToday = s.rungToday + next.id)
+            }
+        }
+        if (s.ringing != null && s.minute - s.ringingSince >= WORK_RING_TIMEOUT_MINUTES) s = ignore(s)
+        return s
+    }
+
+    /** A new work day begins with these [calls] to come. [newDay] counts it as the next game day. */
+    fun startWorkDay(state: GameState, calls: List<Request>, newDay: Boolean): GameState = state.copy(
+        day = if (newDay) state.day + 1 else state.day,
+        upcoming = calls.sortedBy { it.callMinute },
+        ringing = null, active = null,
+        todayEarned = if (newDay) 0 else state.todayEarned,
+        todaySolved = if (newDay) 0 else state.todaySolved,
+        todayMissed = if (newDay) 0 else state.todayMissed,
+        voicemails = if (newDay) emptyList() else state.voicemails,
+        todayQuickAnswers = if (newDay) 0 else state.todayQuickAnswers,
+        todayFailed = if (newDay) 0 else state.todayFailed,
+        caught = if (newDay) emptySet() else state.caught,
+        labDone = if (newDay) emptySet() else state.labDone,
+        rungToday = if (newDay) emptySet() else state.rungToday,
+        todayCaught = if (newDay) 0 else state.todayCaught,
+        todayFalseAlarms = if (newDay) 0 else state.todayFalseAlarms,
+        todayBonus = if (newDay) 0 else state.todayBonus,
+    )
+
+    /** The call opened from a notification: it moves to the front and is due now. Does nothing for a call that is not waiting. */
+    fun bringCallForward(state: GameState, callId: Int): GameState {
+        val waiting = state.upcoming.firstOrNull { it.id == callId }
+        val voicemail = state.voicemails.firstOrNull { it.id == callId }
+        val call = waiting ?: voicemail ?: return state
+        return state.copy(
+            upcoming = listOf(call.copy(callMinute = minOf(call.callMinute, state.minute))) + state.upcoming.filter { it.id != callId },
+            voicemails = state.voicemails.filter { it.id != callId },
+        )
+    }
+
+    /** Puts one more call at the front of today's list, ringing now (used by Demo mode). */
+    fun addCallNow(state: GameState, call: Request): GameState =
+        state.copy(upcoming = listOf(call.copy(callMinute = state.minute)) + state.upcoming)
+
     /** The player picks up the phone. */
     fun answer(state: GameState): GameState {
         val call = state.ringing ?: return state
         return state.copy(ringing = null, active = call)
     }
 
-    /** The player lets it ring, or it rang too long: the neighbor is a little unhappy. */
+    /**
+     * The player lets it ring, or it rang too long: the call becomes a voicemail. Nothing is lost yet; the neighbor
+     * only minds if the voicemail is still unanswered when the shift ends (see [endShift]).
+     */
     fun ignore(state: GameState): GameState {
         val call = state.ringing ?: return state
-        return changeHearts(state, call.neighborId, -1).copy(ringing = null, todayMissed = state.todayMissed + 1)
+        return state.copy(ringing = null, voicemails = state.voicemails + call)
+    }
+
+    /** Answering within this many minutes of the first ring earns a bonus. */
+    const val QUICK_ANSWER_MINUTES = 10f
+    const val QUICK_BONUS = 25
+
+    /**
+     * The player picks up the ringing phone. Answering quickly pays a small bonus and the neighbor likes you
+     * a little more (one extra heart).
+     */
+    fun answerCall(state: GameState): GameState {
+        val call = state.ringing ?: return state
+        val quick = state.minute - state.ringingSince <= QUICK_ANSWER_MINUTES
+        val answered = answer(state)
+        return if (quick) {
+            changeHearts(answered, call.neighborId, 1).copy(
+                money = answered.money + QUICK_BONUS,
+                todayEarned = answered.todayEarned + QUICK_BONUS,
+                todayQuickAnswers = answered.todayQuickAnswers + 1,
+            )
+        } else answered
+    }
+
+    /** Calls a voicemail back. Needs a free phone. The job is the same as if it had been answered, without the quick bonus. */
+    fun returnVoicemail(state: GameState, callId: Int): GameState {
+        if (state.ringing != null || state.active != null) return state
+        val call = state.voicemails.firstOrNull { it.id == callId } ?: return state
+        return state.copy(voicemails = state.voicemails.filter { it.id != callId }, active = call)
+    }
+
+    /**
+     * The shift is over (clock-out or the end of work). Voicemails still unanswered fade away: each neighbor who left
+     * one is a little sad (one heart less, never below zero), and the day's missed count goes up.
+     */
+    fun endShift(state: GameState): GameState {
+        if (state.voicemails.isEmpty()) return state
+        var s = state
+        state.voicemails.map { it.neighborId }.distinct().forEach { s = changeHearts(s, it, -1) }
+        return s.copy(voicemails = emptyList(), todayMissed = s.todayMissed + state.voicemails.size)
     }
 
     /**
@@ -116,6 +218,7 @@ object GameEngine {
                 todayEarned = state.todayEarned + pay,
                 todaySolved = state.todaySolved + 1,
                 solved = state.solved + SolvedRecord(state.day, job.type, job.buildingId, pay),
+                xp = state.xp + Progress.xpForJob(job.type) + if (bonusHearts > 0) Progress.GREAT_WORK_XP else 0,
             )
         } else {
             changeHearts(state, job.neighborId, -1).copy(
@@ -141,6 +244,7 @@ object GameEngine {
             upcoming = generator.callsFor(clean.day, neighbors, clean.connected).filter { it.id !in clean.rungToday },
             solved = clean.solved,
             upgrades = clean.upgrades,
+            xp = clean.xp,
             seed = generator.seed,
             rungToday = clean.rungToday,
             labDone = clean.labDone,
@@ -158,6 +262,38 @@ object GameEngine {
         return state.copy(money = state.money - price, upgrades = state.upgrades + (upgradeId to level + 1))
     }
 
+    /** Payday: the bonus is added to the money. */
+    fun collectPayday(state: GameState, bonus: Int): GameState =
+        state.copy(money = state.money + bonus.coerceAtLeast(0), todayEarned = state.todayEarned + bonus.coerceAtLeast(0))
+
+    /** A small gift for a neighbor at the Saturday market: friendship for a few won, once per neighbor and day. */
+    const val GIFT_COST = 20
+
+    fun giftId(neighborId: String) = "gift_$neighborId"
+
+    fun giveGift(state: GameState, neighborId: String): GameState {
+        val id = giftId(neighborId)
+        if (id in state.labDone || state.money < GIFT_COST || neighborId !in state.hearts) return state
+        return changeHearts(state, neighborId, 1).copy(money = state.money - GIFT_COST, labDone = state.labDone + id)
+    }
+
+    /** Lunch with a neighbor: friendship and a little XP, once a day. */
+    const val LUNCH_ID = "lunch"
+    const val LUNCH_XP = 10
+
+    fun haveLunch(state: GameState, neighborId: String): GameState {
+        if (LUNCH_ID in state.labDone) return state
+        return changeHearts(state, neighborId, 1).copy(labDone = state.labDone + LUNCH_ID, xp = state.xp + LUNCH_XP)
+    }
+
+    /** Reading the weekly topic card gives a little XP, once a day. */
+    const val WEEKLY_ID = "weekly"
+
+    fun readWeeklyTopic(state: GameState): GameState {
+        if (WEEKLY_ID in state.labDone) return state
+        return state.copy(labDone = state.labDone + WEEKLY_ID, xp = state.xp + com.avabuilds.packetrunner.work.WeeklyTopics.CLAIM_XP)
+    }
+
     /** The player finished a Lab game. It pays once per day per game; playing again is just practice. */
     fun completeLab(state: GameState, gameId: String, reward: Int): GameState {
         if (gameId in state.labDone) return state
@@ -165,6 +301,7 @@ object GameEngine {
             money = state.money + reward,
             todayEarned = state.todayEarned + reward,
             labDone = state.labDone + gameId,
+            xp = state.xp + Progress.LAB_XP,
         )
     }
 

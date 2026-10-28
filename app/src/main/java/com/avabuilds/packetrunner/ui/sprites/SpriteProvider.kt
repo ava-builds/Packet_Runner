@@ -3,12 +3,17 @@ package com.avabuilds.packetrunner.ui.sprites
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.avabuilds.packetrunner.game.BuildingType
+import com.avabuilds.packetrunner.game.PropKind
 import com.avabuilds.packetrunner.game.Vec2
 import com.avabuilds.packetrunner.game.isoBoxSilhouette
 import com.avabuilds.packetrunner.game.DoorSide
 
 /** Everything the town can draw. Each key is one sprite; later a PNG can replace any of them. */
-enum class SpriteKey { GRASS_LIGHT, GRASS_DARK, ROAD, TREE, OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS, PLAYER }
+enum class SpriteKey {
+    GRASS_LIGHT, GRASS_DARK, ROAD, WATER, BRIDGE, HILL,
+    TREE, OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS, PLAYER, NEIGHBOR, LIGHTS,
+    STREETLIGHT, BENCH, FENCE, FLOWERS, MAILBOX, CAR, BUS_STOP,
+}
 
 /**
  * One thing to draw. [anchor] is the on-screen center of its ground diamond (for a building, the
@@ -24,6 +29,14 @@ data class Sprite(
     val variant: Int = 0,
     val doorSide: DoorSide? = null,
     val doorIndex: Int = 0,
+    /** 1 = fully drawn; less fades the sprite (the land at the edge of the world). */
+    val alpha: Float = 1f,
+    /** Seconds on the shared animation clock, for things that sway, bob or wave. */
+    val time: Float = 0f,
+    /** Offsets one sprite's movement from another's, so a row of trees does not sway in step. */
+    val phase: Float = 0f,
+    /** For people: walking (true) or standing. */
+    val moving: Boolean = false,
 )
 
 /**
@@ -43,6 +56,16 @@ class FallbackSpriteProvider(
 ) : SpriteProvider {
     override fun draw(scope: DrawScope, sprite: Sprite): Boolean =
         preferred.draw(scope, sprite) || fallback.draw(scope, sprite)
+}
+
+fun PropKind.spriteKey(): SpriteKey = when (this) {
+    PropKind.STREETLIGHT -> SpriteKey.STREETLIGHT
+    PropKind.BENCH -> SpriteKey.BENCH
+    PropKind.FENCE -> SpriteKey.FENCE
+    PropKind.FLOWERS -> SpriteKey.FLOWERS
+    PropKind.MAILBOX -> SpriteKey.MAILBOX
+    PropKind.CAR -> SpriteKey.CAR
+    PropKind.BUS_STOP -> SpriteKey.BUS_STOP
 }
 
 fun BuildingType.spriteKey(): SpriteKey = when (this) {

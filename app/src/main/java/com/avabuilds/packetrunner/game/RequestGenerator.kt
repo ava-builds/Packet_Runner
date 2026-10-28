@@ -29,25 +29,34 @@ class RequestGenerator(val seed: Long) {
         val window = Clock.CALLS_UNTIL - Clock.CALLS_FROM
         val step = window / count
         return callers.mapIndexed { i, neighbor ->
-            val type = when {
-                neighbor.kind == BuildingType.CITY_HALL -> RequestType.ROUTE
-                neighbor.kind == BuildingType.APARTMENTS -> RequestType.NAT
-                neighbor.id !in connected -> RequestType.INSTALL
-                day == 1 -> RequestType.FIX
-                rnd.nextInt(10) < 7 -> RequestType.FIX
-                else -> RequestType.HELP
-            }
             val minute = Clock.CALLS_FROM + i * step + rnd.nextInt(step / 2)
-            Request(
-                id = day * 100 + i,
-                type = type,
-                neighborId = neighbor.id,
-                buildingId = neighbor.buildingId,
-                message = messageFor(type, neighbor, rnd),
-                reward = REWARDS.getValue(type) + 10 * (day - 1),
-                callMinute = minute.toFloat(),
-            )
+            requestFor(day * 100 + i, neighbor, connected, day, minute.toFloat(), rnd)
         }
+    }
+
+    /**
+     * One call from [neighbor] on game [day], ringing at [callMinute]. What they ask for depends on who they are and
+     * whether their place already has a network: City Hall wants a ROUTE job, the Apartments a NAT job, a place without
+     * internet an INSTALL, and the others a FIX (mostly) or HELP.
+     */
+    fun requestFor(id: Int, neighbor: Neighbor, connected: Set<String>, day: Int, callMinute: Float, rnd: Random): Request {
+        val type = when {
+            neighbor.kind == BuildingType.CITY_HALL -> RequestType.ROUTE
+            neighbor.kind == BuildingType.APARTMENTS -> RequestType.NAT
+            neighbor.id !in connected -> RequestType.INSTALL
+            day == 1 -> RequestType.FIX
+            rnd.nextInt(10) < 7 -> RequestType.FIX
+            else -> RequestType.HELP
+        }
+        return Request(
+            id = id,
+            type = type,
+            neighborId = neighbor.id,
+            buildingId = neighbor.buildingId,
+            message = messageFor(type, neighbor, rnd),
+            reward = REWARDS.getValue(type) + 10 * (day - 1),
+            callMinute = callMinute,
+        )
     }
 
     private fun messageFor(type: RequestType, neighbor: Neighbor, rnd: Random): String {

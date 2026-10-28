@@ -20,6 +20,8 @@ data class SaveData(
     val labDone: Set<String> = emptySet(),
     val rungToday: Set<Int> = emptySet(),
     val caught: Set<Int> = emptySet(),
+    /** Experience points. */
+    val xp: Int = 0,
 ) {
     /** Makes a loaded save safe: numbers in range, only neighbors that exist, only known job types. */
     fun sanitized(neighbors: List<Neighbor>): SaveData {
@@ -35,6 +37,7 @@ data class SaveData(
             labDone = labDone,
             rungToday = rungToday,
             caught = caught,
+            xp = xp.coerceAtLeast(0),
         )
     }
 
@@ -48,6 +51,7 @@ data class SaveData(
         "labDone" to labDone.sorted(),
         "rungToday" to rungToday.sorted(),
         "caught" to caught.sorted(),
+        "xp" to xp,
         "solved" to solved.map { mapOf("day" to it.day, "type" to it.type.name, "buildingId" to it.buildingId, "payout" to it.payout) },
     )
 
@@ -65,6 +69,7 @@ data class SaveData(
             labDone = if (state.dayOver) emptySet() else state.labDone,
             rungToday = if (state.dayOver) emptySet() else state.rungToday,
             caught = if (state.dayOver) emptySet() else state.caught,
+            xp = state.xp,
         )
 
         /** Reads a stored map. Missing or odd values fall back to a fresh start instead of crashing. */
@@ -83,7 +88,7 @@ data class SaveData(
             val labDone = (map["labDone"] as? List<*>).orEmpty().filterIsInstance<String>().toSet()
             val rung = (map["rungToday"] as? List<*>).orEmpty().filterIsInstance<Number>().map { it.toInt() }.toSet()
             val caught = (map["caught"] as? List<*>).orEmpty().filterIsInstance<Number>().map { it.toInt() }.toSet()
-            return SaveData(int(map["day"], 1), int(map["money"], START_MONEY), hearts, connected, solved, upgrades, seed, labDone, rung, caught)
+            return SaveData(int(map["day"], 1), int(map["money"], START_MONEY), hearts, connected, solved, upgrades, seed, labDone, rung, caught, int(map["xp"], 0))
         }
     }
 }

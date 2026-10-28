@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.util.lerp
+import kotlin.math.sin
 import com.avabuilds.packetrunner.game.BuildingType
 import com.avabuilds.packetrunner.game.DoorSide
 import com.avabuilds.packetrunner.ui.PR
@@ -16,6 +17,7 @@ import com.avabuilds.packetrunner.ui.Palette5
 import com.avabuilds.packetrunner.ui.TownColors
 import com.avabuilds.packetrunner.ui.drawDiamond
 import com.avabuilds.packetrunner.ui.drawIsoBox
+import com.avabuilds.packetrunner.ui.drawNeighbor
 import com.avabuilds.packetrunner.ui.drawPlayer
 
 /** Draws every sprite with the Canvas, so the game works without any image files. */
@@ -25,16 +27,28 @@ class CanvasSpriteProvider : SpriteProvider {
         with(scope) {
             val tw = sprite.tileWidth
             when (sprite.key) {
-                SpriteKey.GRASS_LIGHT -> drawDiamond(sprite.anchor, tw, tw / 2, TownColors.GrassLight)
-                SpriteKey.GRASS_DARK -> drawDiamond(sprite.anchor, tw, tw / 2, TownColors.GrassDark)
-                SpriteKey.ROAD -> drawDiamond(sprite.anchor, tw, tw / 2, TownColors.Road)
-                SpriteKey.TREE -> drawTree(sprite.anchor, tw, sprite.variant)
+                SpriteKey.GRASS_LIGHT -> drawGround(sprite, TownColors.GrassLight)
+                SpriteKey.GRASS_DARK -> drawGround(sprite, TownColors.GrassDark)
+                SpriteKey.ROAD -> drawGround(sprite, TownColors.Road)
+                SpriteKey.WATER -> drawWater(sprite)
+                SpriteKey.BRIDGE -> drawBridge(sprite)
+                SpriteKey.HILL -> drawHill(sprite)
+                SpriteKey.STREETLIGHT -> drawStreetlight(sprite)
+                SpriteKey.BENCH -> drawBench(sprite)
+                SpriteKey.FENCE -> drawFence(sprite)
+                SpriteKey.FLOWERS -> drawFlowers(sprite)
+                SpriteKey.MAILBOX -> drawMailbox(sprite)
+                SpriteKey.CAR -> drawCar(sprite)
+                SpriteKey.BUS_STOP -> drawBusStop(sprite)
+                SpriteKey.TREE -> drawTree(sprite.anchor, tw, sprite.variant, sprite.time, sprite.phase)
                 SpriteKey.OFFICE -> drawOffice(sprite)
                 SpriteKey.HOUSE -> drawHouse(sprite)
                 SpriteKey.CAFE -> drawCafe(sprite)
                 SpriteKey.CITY_HALL -> drawCityHall(sprite)
                 SpriteKey.APARTMENTS -> drawApartments(sprite)
-                SpriteKey.PLAYER -> drawPlayer(sprite.anchor, tw)
+                SpriteKey.PLAYER -> drawPlayer(sprite.anchor, tw, sprite.time, sprite.moving)
+                SpriteKey.NEIGHBOR -> drawNeighbor(sprite.anchor, tw, sprite.variant, sprite.time)
+                SpriteKey.LIGHTS -> drawLights(sprite)
             }
         }
         return true
@@ -94,13 +108,72 @@ private fun DrawScope.signalArcs(at: Offset, k: Float, color: Color) {
 // Trees
 // ---------------------------------------------------------------------------
 
-private fun DrawScope.drawTree(ground: Offset, tw: Float, variant: Int) {
+/** A tree whose crown sways gently in the wind: higher leaves move more than lower ones, the trunk stays put. */
+private fun DrawScope.drawTree(ground: Offset, tw: Float, variant: Int, time: Float, phase: Float) {
     val s = tw / 100f * (0.9f + 0.1f * variant)
+    val sway = sin(time * 1.3f + phase) * 2.2f * s
     drawOval(TownColors.Shadow, Offset(ground.x - 18 * s, ground.y - 6 * s), Size(36 * s, 12 * s))
     drawRoundRect(TownColors.Trunk, Offset(ground.x - 3.5f * s, ground.y - 30 * s), Size(7 * s, 32 * s), CornerRadius(2 * s))
-    drawCircle(TownColors.LeafDark, 24 * s, Offset(ground.x, ground.y - 52 * s))
-    drawCircle(TownColors.Leaf, 17 * s, Offset(ground.x - 9 * s, ground.y - 46 * s))
-    drawCircle(TownColors.LeafLight, 12 * s, Offset(ground.x + 8 * s, ground.y - 60 * s))
+    drawCircle(TownColors.LeafDark, 24 * s, Offset(ground.x + sway * 0.6f, ground.y - 52 * s))
+    drawCircle(TownColors.Leaf, 17 * s, Offset(ground.x - 9 * s + sway * 0.8f, ground.y - 46 * s))
+    drawCircle(TownColors.LeafLight, 12 * s, Offset(ground.x + 8 * s + sway, ground.y - 60 * s))
+}
+
+
+// ---------------------------------------------------------------------------
+// Windows: one list per building type, used by the daytime drawing and by the night lights
+// ---------------------------------------------------------------------------
+
+/** A window as a rectangle on a wall (u along the wall, v up it, both 0..1), on the left wall, the right wall, or both. */
+private class Win(val u0: Float, val u1: Float, val v0: Float, val v1: Float, val onLeft: Boolean = true, val onRight: Boolean = true)
+
+private fun windowsOf(type: BuildingType): List<Win> = when (type) {
+    // rows of windows on both walls, leaving the bottom row for the door
+    BuildingType.OFFICE -> (1..4).flatMap { row ->
+        (0 until 3).map { col -> Win(0.12f + col * 0.28f, 0.12f + col * 0.28f + 0.18f, 0.1f + row * 0.18f, 0.1f + row * 0.18f + 0.1f) }
+    }
+    BuildingType.HOUSE -> listOf(Win(0.55f, 0.82f, 0.3f, 0.7f))
+    // big shop windows, one on each wall
+    BuildingType.CAFE -> listOf(Win(0.1f, 0.5f, 0.12f, 0.5f, onRight = false), Win(0.5f, 0.9f, 0.12f, 0.5f, onLeft = false))
+    BuildingType.APARTMENTS -> (1..3).flatMap { floor ->
+        (0 until 2).map { col -> Win(0.14f + col * 0.42f, 0.14f + col * 0.42f + 0.26f, 0.08f + floor * 0.22f, 0.08f + floor * 0.22f + 0.12f) }
+    }
+    BuildingType.CITY_HALL -> emptyList()
+}
+
+private fun DrawScope.fillWindows(walls: Walls, type: BuildingType, color: Color) {
+    windowsOf(type).forEach { w ->
+        if (w.onLeft) fillOnWall(walls::left, w.u0, w.u1, w.v0, w.v1, color)
+        if (w.onRight) fillOnWall(walls::right, w.u0, w.u1, w.v0, w.v1, color)
+    }
+}
+
+private val WarmLight = Color(0xFFFFE08A)
+
+/**
+ * The night lights of a building: its windows shine warm yellow with a soft halo. [Sprite.variant] is the building type,
+ * [Sprite.phase] a number that makes some windows stay dark, and [Sprite.alpha] how bright the lights are (0 to 1).
+ */
+private fun DrawScope.drawLights(sprite: Sprite) {
+    val type = BuildingType.entries[sprite.variant.coerceIn(0, BuildingType.entries.lastIndex)]
+    val tw = sprite.tileWidth
+    val w = sprite.size * tw * BUILDING_INSET
+    val height = if (type == BuildingType.HOUSE) HOUSE_WALL_HEIGHT * tw else type.heightInTiles() * tw
+    val walls = Walls(sprite.anchor, w, w / 2, height)
+    val seed = sprite.phase.toInt()
+    windowsOf(type).forEachIndexed { i, win ->
+        if (Math.floorMod(i * 7 + seed * 3, 5) == 0) return@forEachIndexed // a few windows stay dark
+        val halo = 0.02f
+        if (win.onLeft) {
+            fillOnWall(walls::left, win.u0 - halo, win.u1 + halo, win.v0 - halo, win.v1 + halo, WarmLight.copy(alpha = 0.28f * sprite.alpha))
+            fillOnWall(walls::left, win.u0, win.u1, win.v0, win.v1, WarmLight.copy(alpha = sprite.alpha))
+        }
+        if (win.onRight) {
+            fillOnWall(walls::right, win.u0 - halo, win.u1 + halo, win.v0 - halo, win.v1 + halo, WarmLight.copy(alpha = 0.28f * sprite.alpha))
+            fillOnWall(walls::right, win.u0, win.u1, win.v0, win.v1, WarmLight.copy(alpha = sprite.alpha))
+        }
+    }
+    drawDoor(walls, sprite, WarmLight.copy(alpha = 0.55f * sprite.alpha))
 }
 
 // ---------------------------------------------------------------------------
@@ -113,15 +186,7 @@ private fun DrawScope.drawOffice(sprite: Sprite) {
     val walls = Walls(sprite.anchor, w, w / 2, BuildingType.OFFICE.heightInTiles() * tw)
     drawIsoBox(sprite.anchor, w, w / 2, walls.height, top = Palette5.Cornflower, left = Palette5.DuskBlue, right = Color(0xFF4B64A6))
 
-    // Rows of windows on both walls, leaving the bottom row for the door
-    for (row in 1..4) {
-        val v0 = 0.1f + row * 0.18f
-        for (col in 0 until 3) {
-            val u0 = 0.12f + col * 0.28f
-            fillOnWall(walls::left, u0, u0 + 0.18f, v0, v0 + 0.1f, TownColors.Window)
-            fillOnWall(walls::right, u0, u0 + 0.18f, v0, v0 + 0.1f, TownColors.Window)
-        }
-    }
+    fillWindows(walls, BuildingType.OFFICE, TownColors.Window)
     drawDoor(walls, sprite, Palette5.DeepNavy)
 
     // A roof antenna: the engineer's office needs a signal
@@ -147,9 +212,13 @@ private fun DrawScope.drawHouse(sprite: Sprite) {
     drawIsoBox(sprite.anchor, w, h, wallHeight, top = roofDark, left = Color(0xFFE8DCC4), right = Color(0xFFF6EBD6))
 
     // Windows and door on the walls
-    fillOnWall(walls::left, 0.55f, 0.82f, 0.3f, 0.7f, TownColors.Window)
-    fillOnWall(walls::right, 0.55f, 0.82f, 0.3f, 0.7f, TownColors.Window)
+    fillWindows(walls, BuildingType.HOUSE, TownColors.Window)
     drawDoor(walls, sprite, TownColors.Trunk)
+
+    // A brick chimney behind the roof; the smoke comes from the life layer
+    val chimney = sprite.anchor + Offset(0.17f * tw, -1.0f * tw)
+    drawRect(Color(0xFF9B4B3A), chimney, Size(0.09f * tw, 0.22f * tw))
+    drawRect(Color(0xFF6E3328), chimney - Offset(0.01f * tw, 0f), Size(0.11f * tw, 0.04f * tw))
 
     // Pyramid roof, slightly wider than the walls
     val w2 = w * 1.1f
@@ -170,8 +239,7 @@ private fun DrawScope.drawCafe(sprite: Sprite) {
     drawIsoBox(sprite.anchor, w, w / 2, walls.height, top = Color(0xFFB5693E), left = Color(0xFFE0B27C), right = Color(0xFFF0C995))
 
     // Big shop windows and a striped awning over them
-    fillOnWall(walls::left, 0.1f, 0.5f, 0.12f, 0.5f, TownColors.Window)
-    fillOnWall(walls::right, 0.5f, 0.9f, 0.12f, 0.5f, TownColors.Window)
+    fillWindows(walls, BuildingType.CAFE, TownColors.Window)
     for (face in listOf<(Float, Float) -> Offset>(walls::left, walls::right)) {
         val stripes = 6
         for (k in 0 until stripes) {
@@ -222,13 +290,9 @@ private fun DrawScope.drawApartments(sprite: Sprite) {
     drawIsoBox(sprite.anchor, w, w / 2, walls.height, top = Color(0xFF8E4B3E), left = Color(0xFFD08A6E), right = Color(0xFFE5A184))
 
     // Three floors of small windows with a balcony rail under each row, the ground floor left for the door
+    fillWindows(walls, BuildingType.APARTMENTS, TownColors.Window)
     for (floor in 1..3) {
         val v0 = 0.08f + floor * 0.22f
-        for (col in 0 until 2) {
-            val u0 = 0.14f + col * 0.42f
-            fillOnWall(walls::left, u0, u0 + 0.26f, v0, v0 + 0.12f, TownColors.Window)
-            fillOnWall(walls::right, u0, u0 + 0.26f, v0, v0 + 0.12f, TownColors.Window)
-        }
         fillOnWall(walls::left, 0.06f, 0.94f, v0 - 0.035f, v0 - 0.01f, Palette5.DuskBlue)
         fillOnWall(walls::right, 0.06f, 0.94f, v0 - 0.035f, v0 - 0.01f, Palette5.DuskBlue)
     }

@@ -71,6 +71,7 @@ object NetworkMonitor {
                         caught = state.caught + call.id,
                         todayCaught = state.todayCaught + 1,
                         todayBonus = state.todayBonus + bonus,
+                        xp = state.xp + Progress.EARLY_CATCH_XP,
                     ),
                     FlagOutcome.EARLY_CATCH,
                     bonus,

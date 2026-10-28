@@ -9,10 +9,19 @@ data class Upgrade(val id: String, val title: String, val description: String, v
 object Upgrades {
     const val SCOOTER = "scooter"
     const val CABLE_SPOOL = "cable_spool"
+    const val DECOR_PLANT = "decor_plant"
+    const val DECOR_POSTER = "decor_poster"
+    const val DECOR_LAMP = "decor_lamp"
+
+    /** The things that only decorate the office room. */
+    val decor = listOf(DECOR_PLANT, DECOR_POSTER, DECOR_LAMP)
 
     val all = listOf(
         Upgrade(SCOOTER, "Faster scooter", "The engineer walks faster between buildings.", listOf(250, 500)),
         Upgrade(CABLE_SPOOL, "Bulk cable spool", "Ethernet cable costs less per cell in every room.", listOf(200, 400)),
+        Upgrade(DECOR_PLANT, "Office plant", "A leafy plant for your office room. Just for looks.", listOf(80)),
+        Upgrade(DECOR_POSTER, "Network poster", "A poster of the OSI layers for the wall. Just for looks.", listOf(120)),
+        Upgrade(DECOR_LAMP, "Cozy lamp", "A warm lamp for the evenings. Just for looks.", listOf(100)),
     )
 
     fun byId(id: String): Upgrade? = all.firstOrNull { it.id == id }

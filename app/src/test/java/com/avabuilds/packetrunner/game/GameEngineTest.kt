@@ -60,22 +60,21 @@ class GameEngineTest {
         assertEquals(upcoming, s.upcoming.size)
     }
 
-    @Test fun ignoringACallCostsAHeartButNeverGoesBelowZero() {
+    @Test fun ignoringACallMakesItAVoicemailWithoutCostingAnything() {
         val ringing = rung()
         val id = ringing.ringing!!.neighborId
-        val noHearts = GameEngine.ignore(ringing)
-        assertEquals(0, noHearts.hearts.getValue(id))
-        assertEquals(1, noHearts.todayMissed)
-        assertNull(noHearts.ringing)
-
-        val withHearts = GameEngine.ignore(ringing.copy(hearts = ringing.hearts + (id to 3)))
-        assertEquals(2, withHearts.hearts.getValue(id))
+        val after = GameEngine.ignore(ringing)
+        assertNull(after.ringing)
+        assertEquals(listOf(ringing.ringing), after.voicemails)
+        assertEquals(ringing.hearts, after.hearts)
+        assertEquals(0, after.todayMissed)
+        assertTrue(id.isNotEmpty())
     }
 
-    @Test fun aCallThatRingsTooLongIsMissed() {
+    @Test fun aCallThatRingsTooLongBecomesAVoicemail() {
         val s = runUntil(rung()) { it.ringing == null }
         assertNull(s.ringing)
-        assertEquals(1, s.todayMissed)
+        assertEquals(1, s.voicemails.size)
     }
 
     @Test fun solvingPaysAddsAHeartAndAnInstallConnectsTheNeighbor() {

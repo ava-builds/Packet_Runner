@@ -51,12 +51,18 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, onClick: () -> Un
 
 @Composable
 fun SecondaryButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    SecondaryButtonSized(text, 16.sp, modifier, onClick)
+}
+
+/** A secondary button with its own text size, for rows of several buttons. */
+@Composable
+fun SecondaryButtonSized(text: String, fontSize: androidx.compose.ui.unit.TextUnit, modifier: Modifier = Modifier, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(54.dp),
         shape = RoundedCornerShape(14.dp),
     ) {
-        Text(text, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = PR.Teal800)
+        Text(text, fontSize = fontSize, fontWeight = FontWeight.Medium, color = PR.Teal800)
     }
 }
 
