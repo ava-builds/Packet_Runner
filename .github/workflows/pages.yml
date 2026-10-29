@@ -24,8 +24,12 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      # the Android part of the build needs the Android SDK (and its licenses accepted)
-      - uses: android-actions/setup-android@v3
+      # The runner already has the Android SDK. The Android part of the build only needs its licenses accepted,
+      # so Gradle can download any missing piece (like the platform the app is built against).
+      - name: Accept the Android SDK licenses
+        run: |
+          SDKMANAGER=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
 
       - uses: gradle/actions/setup-gradle@v4
 
