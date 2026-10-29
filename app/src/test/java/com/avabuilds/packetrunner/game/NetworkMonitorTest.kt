@@ -9,10 +9,10 @@ class NetworkMonitorTest {
     private val hana = Neighbors.default().first { it.id == "hana" }
     private val mina = Neighbors.default().first { it.id == "mina" }
 
-    /** Day 1: Hana's cafe is connected and will call with a FIX at [callMinute]. */
+    /** Day 1 at the last level, so everyone lives in town: Hana's cafe is connected and will call with a FIX at [callMinute]. */
     private fun dayWithCall(minute: Float, callMinute: Float = 600f): GameState {
         val call = Request(1, RequestType.FIX, "hana", "cafe", "help", 150, callMinute)
-        return GameEngine.newGame(Neighbors.default(), RequestGenerator(1L)).copy(upcoming = listOf(call), minute = minute)
+        return GameEngine.newGame(Neighbors.default(), RequestGenerator(1L)).copy(upcoming = listOf(call), minute = minute, xp = Progress.xpToReach(Curriculum.maxLevel))
     }
 
     @Test fun aPlaceWithoutNetworkHasNoLink() {
@@ -123,8 +123,8 @@ class NetworkMonitorTest {
 
     @Test fun aNeighborWhoHasNotMovedInYetHasNoLink() {
         val dae = Neighbors.default().first { it.id == "dae" }
-        val s = dayWithCall(480f).copy(connected = setOf("hana", "dae"), day = 1)
-        assertEquals(LinkStatus.NO_LINK, NetworkMonitor.status(s, dae))
-        assertEquals(LinkStatus.HEALTHY, NetworkMonitor.status(s.copy(day = 2), dae))
+        val s = dayWithCall(480f).copy(connected = setOf("hana", "dae"))
+        assertEquals(LinkStatus.NO_LINK, NetworkMonitor.status(s.copy(xp = Progress.xpToReach(3)), dae)) // City Hall opens at level 4
+        assertEquals(LinkStatus.HEALTHY, NetworkMonitor.status(s.copy(xp = Progress.xpToReach(4)), dae))
     }
 }

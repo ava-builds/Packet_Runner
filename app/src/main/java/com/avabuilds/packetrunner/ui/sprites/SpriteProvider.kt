@@ -11,7 +11,9 @@ import com.avabuilds.packetrunner.game.DoorSide
 /** Everything the town can draw. Each key is one sprite; later a PNG can replace any of them. */
 enum class SpriteKey {
     GRASS_LIGHT, GRASS_DARK, ROAD, WATER, BRIDGE, HILL,
-    TREE, OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS, PLAYER, NEIGHBOR, LIGHTS,
+    TREE, OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS, TOWER, PLAYER, NEIGHBOR, LIGHTS,
+    /** What stands where a building is not open yet: a building site or an empty lot with a "for rent" sign. */
+    CONSTRUCTION, FOR_RENT,
     STREETLIGHT, BENCH, FENCE, FLOWERS, MAILBOX, CAR, BUS_STOP,
 }
 
@@ -74,6 +76,13 @@ fun BuildingType.spriteKey(): SpriteKey = when (this) {
     BuildingType.CAFE -> SpriteKey.CAFE
     BuildingType.CITY_HALL -> SpriteKey.CITY_HALL
     BuildingType.APARTMENTS -> SpriteKey.APARTMENTS
+    BuildingType.TOWER -> SpriteKey.TOWER
+}
+
+/** The sprite that stands in place of a building that is not open yet: big public buildings are building sites, shops and homes are "for rent". */
+fun BuildingType.lockedSpriteKey(): SpriteKey = when (this) {
+    BuildingType.TOWER, BuildingType.CITY_HALL, BuildingType.OFFICE -> SpriteKey.CONSTRUCTION
+    BuildingType.CAFE, BuildingType.APARTMENTS, BuildingType.HOUSE -> SpriteKey.FOR_RENT
 }
 
 /** How tall a building is drawn, in tile widths (a house includes its roof). */
@@ -83,6 +92,7 @@ fun BuildingType.heightInTiles(): Float = when (this) {
     BuildingType.CAFE -> 0.85f
     BuildingType.CITY_HALL -> 1.0f
     BuildingType.APARTMENTS -> 1.7f
+    BuildingType.TOWER -> 2.6f
 }
 
 /** Where a building's name label floats, in tile widths above its ground (clear of roofs and antennas). */
@@ -92,7 +102,11 @@ fun BuildingType.labelHeightInTiles(): Float = when (this) {
     BuildingType.CAFE -> 1.6f
     BuildingType.CITY_HALL -> 2.5f
     BuildingType.APARTMENTS -> 2.3f
+    BuildingType.TOWER -> 3.4f
 }
+
+/** The label height above a building that is not open yet: the crane of a building site is taller than a "for rent" sign. */
+fun BuildingType.lockedLabelHeightInTiles(): Float = if (lockedSpriteKey() == SpriteKey.CONSTRUCTION) 2.5f else 1.3f
 
 /** A building's walls are drawn a little smaller than its footprint, so neighbors do not touch. */
 const val BUILDING_INSET = 0.92f

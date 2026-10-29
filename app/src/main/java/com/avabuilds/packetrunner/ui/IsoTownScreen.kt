@@ -37,7 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.avabuilds.packetrunner.game.Building
 import com.avabuilds.packetrunner.game.BuildingBubble
+import com.avabuilds.packetrunner.game.Curriculum
 import com.avabuilds.packetrunner.game.DayLight
 import com.avabuilds.packetrunner.game.IsoCamera
 import com.avabuilds.packetrunner.game.Juice
@@ -56,6 +58,8 @@ import com.avabuilds.packetrunner.ui.sprites.SpriteKey
 import com.avabuilds.packetrunner.ui.sprites.SpriteProvider
 import com.avabuilds.packetrunner.ui.sprites.buildingSilhouette
 import com.avabuilds.packetrunner.ui.sprites.labelHeightInTiles
+import com.avabuilds.packetrunner.ui.sprites.lockedLabelHeightInTiles
+import com.avabuilds.packetrunner.ui.sprites.lockedSpriteKey
 import com.avabuilds.packetrunner.ui.sprites.spriteKey
 import kotlin.math.roundToInt
 
@@ -90,6 +94,10 @@ fun IsoTownScreen(
     controlsPadding: PaddingValues = PaddingValues(),
     /** Called when the player taps a building (for a light vibration). */
     onBuildingTap: () -> Unit = {},
+    /** The buildings that are not open yet: they show as a building site or a "for rent" lot, and tapping them does not walk there. */
+    lockedBuildings: Set<String> = emptySet(),
+    /** Called instead of walking when the player taps a building that is not open yet. */
+    onLockedBuildingTap: (Building) -> Unit = {},
 ) {
     val town = controller.town
     val grid = town.grid
@@ -99,6 +107,8 @@ fun IsoTownScreen(
     val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
     val tileWidth = screenWidthPx / FILL_TILES
     val scenery = remember(town) { Scenery.build(town) }
+    // no cables run to a building that is not open yet
+    val openCables = remember(scenery, lockedBuildings) { scenery.cables.filter { it.buildingId !in lockedBuildings } }
     val life = remember { TownLife.default() }
     val iso = remember(grid, tileWidth) { IsoMath.centeredOn(grid, tileWidth, tileWidth / 2f) }
 
@@ -170,6 +180,10 @@ fun IsoTownScreen(
                         val c = camera.worldToScreen(iso.tileCenter(b.center.x, b.center.y), viewCenter)
                         pointInPolygon(buildingSilhouette(b.type, c, tw, b.size), point)
                     }
+                    if (building != null && building.id in lockedBuildings) {
+                        onLockedBuildingTap(building)
+                        return@detectTapGestures
+                    }
                     if (building != null) {
                         bounceStart = clock.floatValue
                         bounceId = building.id
@@ -209,7 +223,7 @@ fun IsoTownScreen(
         // Layer 2: what lies on the ground and moves by itself: Wi-Fi rings, cables, packets, and the walking trail.
         Canvas(Modifier.fillMaxSize()) {
             val view = ViewTransform(camera, iso, tileWidth, size)
-            drawNetwork(view, town, scenery.cables, linkStatus, clock.floatValue)
+            drawNetwork(view, town, openCables, linkStatus, clock.floatValue)
             val trail = controller.trail
             trail.forEach { tile ->
                 drawCircle(TownColors.Marker.copy(alpha = 0.6f), view.tw * 0.06f, view.screenOf(tile.x.toFloat(), tile.y.toFloat()))
@@ -243,7 +257,9 @@ fun IsoTownScreen(
                 if (!playerDrawn && p.depth > playerDepth) drawPlayer()
                 val at = view.screenOf(p.x, p.y)
                 if (view.onScreen(at)) {
-                    val sprite = Sprite(p.key, at, view.tw, size = p.size, variant = p.variant, doorSide = p.doorSide, doorIndex = p.doorIndex, time = sway, phase = p.phase)
+                    val locked = p.buildingId != null && p.buildingId in lockedBuildings
+                    val key = if (locked) town.building(p.buildingId!!).type.lockedSpriteKey() else p.key
+                    val sprite = Sprite(key, at, view.tw, size = p.size, variant = p.variant, doorSide = p.doorSide, doorIndex = p.doorIndex, time = sway, phase = p.phase)
                     if (bouncing != null && p.buildingId == bouncing) {
                         // squash and stretch around the foot of the building
                         val sq = Juice.bounce(bounceT)
@@ -261,12 +277,13 @@ fun IsoTownScreen(
                 val at = view.screenOf(b.center.x, b.center.y)
                 val isTarget = b.id == targetBuildingId
                 val style = labelStyle(isTarget, camera.scale)
-                val label = labelText(b.name, isTarget)
+                val locked = b.id in lockedBuildings
+                val label = if (locked) lockedLabel(b) else labelText(b.name, isTarget)
                 val text = textMeasurer.measure(label, style)
                 val padX = 8f * density
                 val padY = 3f * density
                 val pill = labelPillSize(textMeasurer, label, style)
-                val topLeft = Offset(at.x - pill.width / 2f, at.y - b.type.labelHeightInTiles() * view.tw - pill.height)
+                val topLeft = Offset(at.x - pill.width / 2f, at.y - (if (locked) b.type.lockedLabelHeightInTiles() else b.type.labelHeightInTiles()) * view.tw - pill.height)
                 val fill = when {
                     isTarget -> Palette5.PersianBlue
                     arrivedAt?.id == b.id -> PR.Amber
@@ -280,13 +297,13 @@ fun IsoTownScreen(
         // Layer 4: the life of the town: people, cars, smoke, birds, cloud shadows and Pip. Follows the shared clock.
         Canvas(Modifier.fillMaxSize()) {
             val view = ViewTransform(camera, iso, tileWidth, size)
-            drawLife(view, sprites, town, life, scenery.cables, linkStatus, clock.floatValue)
+            drawLife(view, sprites, town, life, openCables, linkStatus, clock.floatValue)
         }
 
         // Layer 5: the color of the time of day over everything. Layer 6: lit windows and streetlights on top of the dark.
         Canvas(Modifier.fillMaxSize()) { drawDayTint(DayLight.at(dayMinute())) }
         Canvas(Modifier.fillMaxSize()) {
-            drawNightLights(ViewTransform(camera, iso, tileWidth, size), sprites, town, DayLight.at(dayMinute()))
+            drawNightLights(ViewTransform(camera, iso, tileWidth, size), sprites, town, DayLight.at(dayMinute()), lockedBuildings)
         }
 
         // Layer 7: the bubbles above the buildings, over the dark so they stay bright at night
@@ -302,4 +319,10 @@ fun IsoTownScreen(
                 .clickable { camera = IsoCamera() },
         ) { Pill("Reset view") }
     }
+}
+
+/** The label of a building that is not open yet: "For rent · Lv 2" for a lot, "Soon · Lv 3" for a building site. */
+private fun lockedLabel(b: Building): String {
+    val level = Curriculum.buildingLevel(b.id)?.let { " · Lv $it" }.orEmpty()
+    return if (b.type.lockedSpriteKey() == SpriteKey.CONSTRUCTION) "Soon$level" else "For rent$level"
 }

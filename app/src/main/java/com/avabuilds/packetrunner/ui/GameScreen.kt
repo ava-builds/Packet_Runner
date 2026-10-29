@@ -15,6 +15,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +39,9 @@ import com.avabuilds.packetrunner.data.UserProfile
 import com.avabuilds.packetrunner.game.BuildingType
 import com.avabuilds.packetrunner.game.Bubbles
 import com.avabuilds.packetrunner.game.FlagOutcome
+import com.avabuilds.packetrunner.game.Curriculum
+import com.avabuilds.packetrunner.game.LevelUp
+import com.avabuilds.packetrunner.game.LevelUpEvent
 import com.avabuilds.packetrunner.game.GameEngine
 import com.avabuilds.packetrunner.game.NetworkMonitor
 import com.avabuilds.packetrunner.game.Neighbors
@@ -56,6 +60,7 @@ import com.avabuilds.packetrunner.network.RoutingPuzzles
 import com.avabuilds.packetrunner.network.Scenario
 import com.avabuilds.packetrunner.network.Scenarios
 import com.avabuilds.packetrunner.ui.hud.BottomNav
+import com.avabuilds.packetrunner.ui.hud.LevelUpCall
 import com.avabuilds.packetrunner.ui.hud.BottomNavHeight
 import com.avabuilds.packetrunner.ui.hud.NavTab
 import com.avabuilds.packetrunner.ui.hud.PhoneFab
@@ -130,6 +135,7 @@ fun GameScreen(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val haptics = LocalHapticFeedback.current
+    val debuggable = (LocalContext.current.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
     val work = rememberWorkLife()
     var workSettingsOpen by remember { mutableStateOf(false) }
     var inboxOpen by remember { mutableStateOf(false) }
@@ -149,6 +155,8 @@ fun GameScreen(
     var state by remember {
         mutableStateOf(if (initialSave != null) GameEngine.restore(initialSave, neighbors, generator) else GameEngine.newGame(neighbors, generator))
     }
+    val unlocked = Curriculum.levelOf(state.xp) // the course level: it decides what is open (neighbors, Lab games, the Workbench, case files)
+    val lockedBuildings = remember(unlocked) { town.buildings.map { it.id }.filter { !Curriculum.buildingOpen(it, unlocked) }.toSet() }
     var tab by remember { mutableStateOf(NavTab.TOWN) } // the bottom navigation: Town, Notebook, Shop or Profile
     var toast by remember { mutableStateOf<String?>(null) }
     var scenario by remember { mutableStateOf<Scenario?>(null) } // the room the player is working in, if any
@@ -179,14 +187,14 @@ fun GameScreen(
             val newDay = book.epochDay != -1L
             val nextDay = if (newDay) state.day + 1 else state.day
             val ahead = work.nextBook.takeIf { it.epochDay == today.epochDay }
-            val planned = ahead ?: CallPlanner.plan(work.schedule, today, nextDay, neighbors, state.connected, generator, fromMinute = today.minuteOfDay)
+            val planned = ahead ?: CallPlanner.plan(work.schedule, today, nextDay, Curriculum.levelOf(state.xp), neighbors, state.connected, generator, fromMinute = today.minuteOfDay)
             work.updateCallBook(planned)
             state = GameEngine.startWorkDay(state, planned.pending(), newDay = newDay)
         }
         // Plan the next workday ahead too, so its notifications can be set up while the app is closed
         work.schedule.nextWorkdayAfter(today)?.let { next ->
             if (work.nextBook.epochDay != next.epochDay) {
-                work.updateNextBook(CallPlanner.plan(work.schedule, next, state.day + 1, neighbors, state.connected, generator))
+                work.updateNextBook(CallPlanner.plan(work.schedule, next, state.day + 1, Curriculum.levelOf(state.xp), neighbors, state.connected, generator))
             }
         }
         // The week: start tracking, or find a payday that was missed because the app was closed
@@ -290,15 +298,22 @@ fun GameScreen(
     // A short buzz when the phone starts to ring
     LaunchedEffect(state.ringing?.id) { if (state.ringing != null) haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
 
-    // A message when the engineer reaches a new level
-    val level = Progress.progress(state.xp).level
-    var lastLevel by remember { mutableIntStateOf(level) }
-    LaunchedEffect(level) {
-        if (level > lastLevel) {
-            toast = "Level up! You are now level $level"
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+    // Reaching a level: a coin bonus now, and a call from Nana (shown when no job is open) about what is new
+    val levelUps = remember { mutableStateListOf<LevelUpEvent>() }
+    var lastXp by remember { mutableIntStateOf(state.xp) }
+    LaunchedEffect(state.xp) {
+        val events = LevelUp.events(lastXp, state.xp)
+        lastXp = state.xp
+        if (events.isEmpty()) return@LaunchedEffect
+        state = state.copy(money = state.money + LevelUp.totalBonus(events))
+        levelUps.addAll(events)
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        // The next workday was planned with the old level: plan it again, so the new neighbors and topics start calling then
+        if (work.loaded && !work.needsSetup) {
+            work.schedule.nextWorkdayAfter(work.now)?.let { next ->
+                work.updateNextBook(CallPlanner.plan(work.schedule, next, state.day + 1, Curriculum.levelOf(state.xp), neighbors, state.connected, generator))
+            }
         }
-        lastLevel = level
     }
     // Picks up the ringing phone; a quick answer pays a bonus and the neighbor likes you more
     fun answerPhone() {
@@ -335,7 +350,12 @@ fun GameScreen(
         // The town draws edge to edge, under the system bars, so the time-of-day color covers the whole screen.
         // Everything else keeps clear of the bars.
         IsoTownScreen(controller, targetBuildingId = active?.buildingId, linkStatus = linkStatus, dayMinute = { state.minute }, bubbles = bubbles, controlsPadding = PaddingValues(top = contentPadding.calculateTopPadding() + TopBarHeight + 4.dp),
-            onBuildingTap = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) })
+            onBuildingTap = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
+            lockedBuildings = lockedBuildings,
+            onLockedBuildingTap = { b ->
+                val level = Curriculum.buildingLevel(b.id)
+                toast = if (level != null) "🔒 ${b.name} opens at level $level (${Progress.xpToReach(level)} XP)" else "🔒 ${b.name} is not open yet"
+            })
         Box(Modifier.fillMaxSize().padding(contentPadding)) {
 
         // Top: the bar with the engineer, level, money and time; messages appear just below it
@@ -390,7 +410,7 @@ fun GameScreen(
                     )
                 }
             } else if (active == null && controller.arrivedAt?.type == BuildingType.OFFICE) {
-                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null }, onOpenLab = { labMenuOpen = true }, onOpenWorkbench = { workbenchOpen = true }, onOpenShop = { tab = NavTab.SHOP }, clockButton = { ClockButton(work) }, voicemails = state.voicemails.size, onOpenVoicemail = { inboxOpen = true; inboxReason = null }, onOpenTopic = { topicOpen = true })
+                OfficeCard(onOpenMonitor = { monitorOpen = true; monitorMessage = null }, onOpenLab = { labMenuOpen = true }, onOpenWorkbench = { if (Curriculum.workbenchOpen(unlocked)) workbenchOpen = true else toast = "🔒 The Workbench opens at level 4: City Hall" }, workbenchLocked = !Curriculum.workbenchOpen(unlocked), onOpenShop = { tab = NavTab.SHOP }, clockButton = { ClockButton(work) }, voicemails = state.voicemails.size, onOpenVoicemail = { inboxOpen = true; inboxReason = null }, onOpenTopic = { topicOpen = true })
             } else if (active != null) {
                 val neighbor = neighbors.first { it.id == active.neighborId }
                 val building = town.building(active.buildingId)
@@ -403,7 +423,8 @@ fun GameScreen(
                             if (active.type == RequestType.ROUTE) {
                                 routing = RoutingPuzzles.forJob(state.solved.count { it.type == RequestType.ROUTE })
                             } else if (active.type == RequestType.CASE) {
-                                caseFile = CaseFiles.forJob(state.solved.count { it.type == RequestType.CASE })
+                                caseFile = if (active.buildingId == "tower") CaseFiles.forTower(state.solved.count { it.buildingId == "tower" })
+                                else CaseFiles.pick(unlocked, state.solved.count { it.type == RequestType.CASE }) ?: CaseFiles.all.first()
                             } else if (active.type == RequestType.NAT) {
                                 nat = NatPuzzles.forJob(state.solved.count { it.type == RequestType.NAT })
                             } else {
@@ -513,6 +534,7 @@ fun GameScreen(
             ProfileScreen(
                 state = state, neighbors = neighbors, user = user, cloud = cloud, currentSave = save, notebook = notebook,
                 onUserChanged = onUserChanged, onLoggedOut = onLoggedOut, onRestore = onRestore, onClose = { tab = NavTab.TOWN }, onWorkSettings = { workSettingsOpen = true },
+                onDebugXp = if (debuggable) ({ state = state.copy(xp = state.xp + 100) }) else null,
                 modifier = Modifier.padding(bottom = BottomNavHeight),
             )
         }
@@ -545,7 +567,7 @@ fun GameScreen(
                 }
             }
         } else if (labMenuOpen) {
-            LabMenu(doneToday = state.labDone, onPick = { labGame = it }, onClose = { labMenuOpen = false })
+            LabMenu(doneToday = state.labDone, level = unlocked, onPick = { labGame = it }, onClose = { labMenuOpen = false })
         }
 
         val natJob = nat
@@ -618,6 +640,10 @@ fun GameScreen(
             onEarned = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
         )
 
+        // Nana's level-up call waits until the player is not in the middle of a job, a Lab game or the Workbench
+        val busy = scenario != null || nat != null || routing != null || caseFile != null || labGame != null || workbenchOpen
+        if (!busy) levelUps.firstOrNull()?.let { event -> LevelUpCall(event, onThanks = { levelUps.removeAt(0) }) }
+
         // Free time: the office room and the Saturday market
         if (roomOpen) {
             OfficeRoomScreen(
@@ -664,8 +690,12 @@ fun GameScreen(
                 claimedToday = GameEngine.WEEKLY_ID in state.labDone,
                 onPractice = { practice ->
                     when (practice) {
-                        is Practice.InLab -> { topicOpen = false; labGame = practice.game }
-                        Practice.OnWorkbench -> { topicOpen = false; workbenchOpen = true }
+                        is Practice.InLab ->
+                            if (Curriculum.labOpen(practice.game.id, unlocked)) { topicOpen = false; labGame = practice.game }
+                            else toast = "🔒 That Lab game opens at level ${Curriculum.labLevel(practice.game.id)}"
+                        Practice.OnWorkbench ->
+                            if (Curriculum.workbenchOpen(unlocked)) { topicOpen = false; workbenchOpen = true }
+                            else toast = "🔒 The Workbench opens at level 4: City Hall"
                         is Practice.OnTheJob -> Unit
                     }
                 },
@@ -711,11 +741,11 @@ fun GameScreen(
                     if (work.state != WorkState.WORKING) {
                         toast = "You are ${work.state.label.lowercase()}. Clock in first to get a call."
                     } else {
-                        val pool = neighbors.filter { it.movesInDay <= state.day }
+                        val pool = neighbors.filter { it.hasMovedIn(unlocked) }
                         val caller = pool[Random.nextInt(pool.size)]
                         val call = generator.requestFor(
                             id = 900_000 + Random.nextInt(99_999), neighbor = caller, connected = state.connected,
-                            day = state.day, callMinute = state.minute, rnd = Random(System.nanoTime()),
+                            day = state.day, level = unlocked, callMinute = state.minute, rnd = Random(System.nanoTime()),
                         )
                         state = GameEngine.addCallNow(state, call)
                         tab = NavTab.TOWN

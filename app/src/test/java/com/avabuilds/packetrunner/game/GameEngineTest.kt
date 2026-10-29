@@ -27,7 +27,7 @@ class GameEngineTest {
         assertEquals(Clock.DAY_START, s.minute, 0.001f)
         assertEquals(START_MONEY, s.money)
         assertTrue(s.hearts.values.all { it == 0 })
-        assertEquals(setOf("hana", "dae", "rin"), s.connected)
+        assertEquals(setOf("hana", "dae", "rin", "yuna"), s.connected) // the places that had internet from the start
         assertEquals(2, s.upcoming.size)
         assertNull(s.ringing)
     }
@@ -128,7 +128,7 @@ class GameEngineTest {
         assertEquals(solved.hearts, day2.hearts)
         assertEquals(0, day2.todaySolved)
         assertFalse(day2.upcoming.isEmpty())
-        assertTrue(day2.upcoming.any { it.neighborId == "joon" }) // Joon moves in on day 2
+        assertTrue(day2.upcoming.all { neighbors.first { n -> n.id == it.neighborId }.hasMovedIn(1) }) // only the houses live in town at level 1
     }
 
     @Test fun aPayoutCanBeLowerThanTheRewardBecauseMaterialsCostMoney() {

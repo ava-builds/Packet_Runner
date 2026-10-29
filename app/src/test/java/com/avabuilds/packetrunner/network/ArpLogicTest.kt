@@ -115,7 +115,12 @@ class CaseSessionTest {
     }
 
     @Test fun theSameCaseDoesNotComeTwiceInARow() {
-        assertTrue(CaseFiles.forJob(0).id != CaseFiles.forJob(1).id)
-        assertEquals(CaseFiles.forJob(0), CaseFiles.forJob(CaseFiles.all.size))
+        assertTrue(CaseFiles.pick(7, 0)!!.id != CaseFiles.pick(7, 1)!!.id)
+        assertEquals(CaseFiles.pick(7, 0), CaseFiles.pick(7, CaseFiles.all.size * 2))
+    }
+
+    @Test fun noCaseComesBeforeACaseTopicIsOpen() {
+        assertNull(CaseFiles.pick(1, 0))
+        assertTrue(CaseFiles.pick(2, 0) != null)
     }
 }

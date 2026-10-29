@@ -1,6 +1,6 @@
 package com.avabuilds.packetrunner.game
 
-enum class BuildingType { OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS }
+enum class BuildingType { OFFICE, HOUSE, CAFE, CITY_HALL, APARTMENTS, TOWER }
 
 /** Things that stand in the town besides buildings and trees. */
 enum class PropKind { STREETLIGHT, BENCH, FENCE, FLOWERS, MAILBOX, CAR, BUS_STOP }
@@ -124,6 +124,7 @@ object Town {
             Building("house3", BuildingType.HOUSE, "House 3", origin = TilePos(6, 6), size = 2, door = TilePos(8, 6), style = 2),
             Building("cityhall", BuildingType.CITY_HALL, "City Hall", origin = TilePos(0, 8), size = 2, door = TilePos(2, 8)),
             Building("apartments", BuildingType.APARTMENTS, "Apartments", origin = TilePos(8, 0), size = 2, door = TilePos(8, 2)),
+            Building("tower", BuildingType.TOWER, "Office Tower", origin = TilePos(3, 0), size = 2, door = TilePos(5, 1)),
         )
         val trees = setOf(
             TilePos(0, 0), TilePos(1, 0), TilePos(7, 0), TilePos(0, 3), TilePos(0, 4),
@@ -135,12 +136,12 @@ object Town {
             Prop(PropKind.BENCH, TilePos(3, 4)), Prop(PropKind.BENCH, TilePos(8, 9), variant = 1),
             Prop(PropKind.FENCE, TilePos(3, 6), variant = 1), Prop(PropKind.FENCE, TilePos(3, 7), variant = 1),
             Prop(PropKind.FENCE, TilePos(9, 6), variant = 1), Prop(PropKind.FENCE, TilePos(9, 7), variant = 1),
-            Prop(PropKind.FLOWERS, TilePos(4, 3)), Prop(PropKind.FLOWERS, TilePos(1, 2)),
+            Prop(PropKind.FLOWERS, TilePos(4, 3)), Prop(PropKind.FLOWERS, TilePos(2, 0)),
             Prop(PropKind.FLOWERS, TilePos(7, 1)), Prop(PropKind.FLOWERS, TilePos(2, 9)),
             Prop(PropKind.MAILBOX, TilePos(2, 4)),
             Prop(PropKind.CAR, TilePos(4, 4), variant = 0), Prop(PropKind.CAR, TilePos(7, 4), variant = 1),
             Prop(PropKind.CAR, TilePos(9, 8), variant = 2),
-            Prop(PropKind.STREETLIGHT, TilePos(4, 1), blocks = false), Prop(PropKind.STREETLIGHT, TilePos(6, 1), blocks = false),
+            Prop(PropKind.STREETLIGHT, TilePos(2, 1), blocks = false), Prop(PropKind.STREETLIGHT, TilePos(6, 1), blocks = false),
             Prop(PropKind.STREETLIGHT, TilePos(1, 3), blocks = false), Prop(PropKind.STREETLIGHT, TilePos(8, 3), blocks = false),
             Prop(PropKind.STREETLIGHT, TilePos(2, 7), blocks = false), Prop(PropKind.STREETLIGHT, TilePos(8, 8), blocks = false),
         )

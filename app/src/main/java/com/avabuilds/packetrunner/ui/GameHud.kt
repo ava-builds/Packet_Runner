@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.game.Building
+import com.avabuilds.packetrunner.game.Curriculum
 import com.avabuilds.packetrunner.game.GameState
 import com.avabuilds.packetrunner.game.MAX_HEARTS
 import com.avabuilds.packetrunner.game.Neighbor
@@ -139,6 +140,8 @@ fun OfficeCard(
     voicemails: Int = 0,
     onOpenVoicemail: () -> Unit = {},
     onOpenTopic: () -> Unit = {},
+    /** The Workbench opens with level 4; until then its button is locked. */
+    workbenchLocked: Boolean = false,
 ) {
     Panel(modifier, color = PR.White, borderColor = Palette5.PersianBlue) {
         Text("You are at the Office", fontSize = 15.sp, fontWeight = FontWeight.Bold)
@@ -149,7 +152,7 @@ fun OfficeCard(
         SecondaryButton("📚 Weekly topic", onClick = onOpenTopic)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SecondaryButtonSized("🔬 Lab", 14.sp, Modifier.weight(1f), onOpenLab)
-            SecondaryButtonSized("🛠 Bench", 14.sp, Modifier.weight(1f), onOpenWorkbench)
+            SecondaryButtonSized(if (workbenchLocked) "🔒 Bench" else "🛠 Bench", 14.sp, Modifier.weight(1f), onOpenWorkbench)
             SecondaryButtonSized("🛒 Shop", 14.sp, Modifier.weight(1f), onOpenShop)
         }
     }
@@ -160,15 +163,12 @@ fun OfficeCard(
 fun FriendsPanel(neighbors: List<Neighbor>, state: GameState, modifier: Modifier = Modifier) {
     Panel(modifier, color = PR.White, borderColor = PR.Line) {
         Text("Friends", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        neighbors.filter { it.movesInDay <= state.day }.forEach { n ->
+        neighbors.filter { it.hasMovedIn(Curriculum.levelOf(state.xp)) }.forEach { n ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Avatar(n)
                 Text(n.name, Modifier.weight(1f), fontSize = 14.sp)
                 Text(heartsText(state.hearts[n.id] ?: 0), fontSize = 14.sp, color = PR.Red)
             }
-        }
-        if (neighbors.any { it.movesInDay > state.day }) {
-            Text("New neighbors are moving in soon.", fontSize = 12.sp, color = PR.Muted)
         }
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.avabuilds.packetrunner.game.GameEngine
+import com.avabuilds.packetrunner.game.Curriculum
 import com.avabuilds.packetrunner.game.GameState
 import com.avabuilds.packetrunner.game.Neighbor
 import com.avabuilds.packetrunner.game.Upgrades
@@ -143,7 +144,7 @@ fun MarketScreen(state: GameState, neighbors: List<Neighbor>, onGift: (Neighbor)
                 TextButton(onClick = onClose) { Text("Close", color = Palette5.PersianBlue, fontSize = 14.sp) }
             }
             Text("Your money: ₩${state.money}", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = PR.Amber800)
-            neighbors.filter { it.movesInDay <= state.day }.forEach { n ->
+            neighbors.filter { it.hasMovedIn(Curriculum.levelOf(state.xp)) }.forEach { n ->
                 val given = GameEngine.giftId(n.id) in state.labDone
                 Panel(color = PR.White, borderColor = if (given) PR.Green600 else Palette5.PersianBlue) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

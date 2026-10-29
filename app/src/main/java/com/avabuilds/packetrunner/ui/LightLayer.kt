@@ -30,11 +30,12 @@ internal fun DrawScope.drawDayTint(light: Light) {
  * The lights that shine on top of the dark: lit windows in every building, and the streetlights with a glow around
  * the lamp and a pool of light on the ground. They fade in through the evening and are fully on at night.
  */
-internal fun DrawScope.drawNightLights(view: ViewTransform, sprites: SpriteProvider, town: TownMap, light: Light) {
+internal fun DrawScope.drawNightLights(view: ViewTransform, sprites: SpriteProvider, town: TownMap, light: Light, lockedBuildings: Set<String> = emptySet()) {
     val scope = this
     val tw = view.tw
     if (light.windowGlow > 0.01f) {
         town.buildings.forEach { b ->
+            if (b.id in lockedBuildings) return@forEach // a lot or a building site has no lit windows
             val at = view.screenOf(b.center.x, b.center.y)
             if (!view.onScreen(at)) return@forEach
             sprites.draw(

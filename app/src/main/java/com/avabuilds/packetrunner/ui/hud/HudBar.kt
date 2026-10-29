@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.avabuilds.packetrunner.game.Curriculum
 import com.avabuilds.packetrunner.game.DayLight
 import com.avabuilds.packetrunner.game.DayPeriod
 import com.avabuilds.packetrunner.game.GameState
@@ -78,7 +79,7 @@ fun TopBar(
                 if (saveMark.isNotEmpty()) Text(saveMark, fontSize = 10.sp, color = PR.Muted)
             }
             XpBar(progress.fraction)
-            Text("${progress.xpIntoLevel} / ${progress.xpForLevel} XP", fontSize = 10.sp, color = PR.Muted)
+            Text(Curriculum.hudLine(state.xp), fontSize = 10.sp, color = PR.Muted, maxLines = 1)
         }
 
         Text(

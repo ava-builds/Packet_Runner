@@ -8,33 +8,57 @@ building and solve the job. Concepts follow *Computer Networks: A Systems Approa
 The game is **fully playable offline**: no account and no internet are needed, and everything is saved on the phone.
 
 Kotlin, Jetpack Compose (minSdk 24). Open the project in Android Studio and run the `app` configuration.
-Packages: `game` (town, pathfinding, requests, day clock, monitor, XP, upgrades), `network` (the simulator, scenarios,
+Packages: `game` (town, pathfinding, requests, day clock, monitor, XP and levels, the course progression, upgrades), `network` (the simulator, scenarios,
 puzzles and case files), `work` (the real-time work life), `notify` (call notifications), `data` (local save, notebook,
 optional cloud backup) and `ui` (screens and drawing).
+
+## The course progression
+
+Levels follow the order of the Computer Communication course. XP comes from jobs, Lab games and early catches on the Network Monitor
+(level 2 at 100 XP, level 3 at 300, 4 at 600, 5 at 1000, 6 at 1500, 7 at 2100). The level, not the day, decides what is open:
+
+| Level | Opens | Topics |
+| --- | --- | --- |
+| 1 Houses | the three houses; Lab: encoding | cables, repeater, bandwidth vs latency |
+| 2 Cafe | the cafe; Lab: CRC | Wi-Fi hidden node and exposed node, RTS/CTS |
+| 3 Office tower | the Office Tower; Lab: sliding window, hub to switch | hub collisions, CSMA/CD, switch and learning bridge |
+| 4 City Hall | City Hall; the Workbench | forwarding table, subnet masks, ARP |
+| 5 Apartments | the Apartments | DHCP pool and lease, NAT, port forwarding |
+| 6 Troubleshooting | case jobs | MTU and fragmentation, ICMP, ping, traceroute |
+| 7 On the move | Lab: Mobile IP, UDP or TCP | delivery van (Mobile IP), streamer vs bank (TCP vs UDP) |
+
+- Neighbors move in and buildings open when their level is reached. A building that is not open yet shows as a building site (City Hall,
+  Office Tower) or a "For rent" lot (cafe, Apartments); tapping it says which level opens it.
+- Case jobs and Lab games only come from topics that are open. After a new level the newest topic comes first and earlier ones are mixed in,
+  so old topics keep being practised. "Out of IP addresses" (DHCP) jobs start at level 5.
+- Reaching a level gives a coin bonus and a call from Nana (with a short chime) about what is new. The next unlock ("Level 3: Office tower
+  opens at 300 XP") shows in the top bar and in Profile, which also has the whole course path.
+- A saved game needs nothing extra: the level is worked out from its XP.
+- Debug builds have a "+100 XP" button in Profile for trying the levels; release builds do not.
 
 ## What is in the game
 
 **Customer jobs.** Neighbors phone you and you go to their building:
 
 - *Install* (houses without internet), *Fix* (the Wi-Fi keeps dropping; the cafe has a card reader that needs low latency)
-  and *Help* ("out of IP addresses": DHCP pool and lease). You work in a small room with Scan, Cable, Device and Settings tools.
+  and *Help* ("out of IP addresses": DHCP pool and lease, from level 5). You work in a small room with Scan, Cable, Device and Settings tools.
 - *City Hall*: fix a router's forwarding table by setting subnet masks (longest prefix match).
 - *Apartments*: NAT. Fill the translation table, deliver replies, add a port-forwarding rule.
-- *Case jobs* (called by houses that already have internet): look-and-fix jobs with a story, symptoms, scan tables, four
-  possible actions (wrong ones cost money and explain themselves) and a concept card in English and Korean.
+- *Case jobs* (called by the tenants of the Office Tower, the houses and the cafe once they are connected): look-and-fix jobs with a story,
+  symptoms, scan tables, four possible actions (wrong ones cost money and explain themselves) and a concept card in English and Korean.
   There are fifteen cases:
   ARP (stale cache, wrong gateway; MAC changes per hop while IP stays), IP fragmentation (MTU and offsets),
   ICMP and TTL (ping and traceroute: a slow hop, a routing loop, a silent router),
-  Wi-Fi (the exposed node and the hidden node), an office tower (hub to switch, a switch that remembers a printer's old port),
+  Wi-Fi (the exposed node and the hidden node), the office tower (hub to switch, a switch that remembers a printer's old port),
   a delivery van (Mobile IP: expired registration, reverse tunnel) and a streamer and a bank (UDP against TCP).
 
 **The office.** The Network Monitor (catch problems early for a bonus), a Lab with six mini-games that pay once a day
 (CRC error detection, line encoding, sliding window, hub to switch with a learning bridge, Mobile IP for a delivery driver,
-UDP or TCP for four apps), a Workbench (subnet calculator) and an Upgrade shop (faster scooter, cheaper cable spool and three
+UDP or TCP for four apps; each opens with the level of its topic), a Workbench (subnet calculator, from level 4) and an Upgrade shop (faster scooter, cheaper cable spool and three
 decorations for your office room). Upgrades are saved with the game.
 
-**Progress.** Every job, Lab game and early catch gives XP and levels you up. Neighbors have friendship hearts. The town has
-day and night, little people and cars that move around, and bubbles over buildings that need you.
+**Town life.** Neighbors have friendship hearts. The town has day and night, little people and cars that move around, and bubbles over
+buildings that need you.
 
 **Real-time work life.** The game follows your real clock. On first launch you choose your work week (hours, lunch, days off).
 

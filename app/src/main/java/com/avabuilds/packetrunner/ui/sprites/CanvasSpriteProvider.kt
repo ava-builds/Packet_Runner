@@ -46,6 +46,9 @@ class CanvasSpriteProvider : SpriteProvider {
                 SpriteKey.CAFE -> drawCafe(sprite)
                 SpriteKey.CITY_HALL -> drawCityHall(sprite)
                 SpriteKey.APARTMENTS -> drawApartments(sprite)
+                SpriteKey.TOWER -> drawTower(sprite)
+                SpriteKey.CONSTRUCTION -> drawConstruction(sprite)
+                SpriteKey.FOR_RENT -> drawForRent(sprite)
                 SpriteKey.PLAYER -> drawPlayer(sprite.anchor, tw, sprite.time, sprite.moving)
                 SpriteKey.NEIGHBOR -> drawNeighbor(sprite.anchor, tw, sprite.variant, sprite.time)
                 SpriteKey.LIGHTS -> drawLights(sprite)
@@ -137,6 +140,10 @@ private fun windowsOf(type: BuildingType): List<Win> = when (type) {
     BuildingType.CAFE -> listOf(Win(0.1f, 0.5f, 0.12f, 0.5f, onRight = false), Win(0.5f, 0.9f, 0.12f, 0.5f, onLeft = false))
     BuildingType.APARTMENTS -> (1..3).flatMap { floor ->
         (0 until 2).map { col -> Win(0.14f + col * 0.42f, 0.14f + col * 0.42f + 0.26f, 0.08f + floor * 0.22f, 0.08f + floor * 0.22f + 0.12f) }
+    }
+    // a glass tower: many narrow rows of windows
+    BuildingType.TOWER -> (1..8).flatMap { row ->
+        (0 until 3).map { col -> Win(0.12f + col * 0.28f, 0.12f + col * 0.28f + 0.18f, 0.06f + row * 0.11f, 0.06f + row * 0.11f + 0.06f) }
     }
     BuildingType.CITY_HALL -> emptyList()
 }
@@ -303,4 +310,111 @@ private fun DrawScope.drawApartments(sprite: Sprite) {
     drawCircle(Color.White, tw * 0.09f, roof - Offset(0f, tw * 0.1f))
     drawCircle(Palette5.DuskBlue, tw * 0.09f, roof - Offset(0f, tw * 0.1f), style = Stroke(tw * 0.015f))
     drawLine(Palette5.DeepNavy, roof, roof - Offset(0f, tw * 0.1f), strokeWidth = tw * 0.02f)
+}
+
+private fun DrawScope.drawTower(sprite: Sprite) {
+    val tw = sprite.tileWidth
+    val w = sprite.size * tw * BUILDING_INSET
+    val walls = Walls(sprite.anchor, w, w / 2, BuildingType.TOWER.heightInTiles() * tw)
+    drawIsoBox(sprite.anchor, w, w / 2, walls.height, top = Color(0xFF7FA3D9), left = Color(0xFF3E5C94), right = Color(0xFF5576B3))
+    fillWindows(walls, BuildingType.TOWER, TownColors.Window)
+    drawDoor(walls, sprite, Palette5.DeepNavy)
+
+    // A smaller crown on top, then an antenna with a red light
+    val roof = sprite.anchor - Offset(0f, walls.height)
+    val crownHeight = 0.3f * tw
+    drawIsoBox(roof, w * 0.6f, w * 0.3f, crownHeight, top = Palette5.Cornflower, left = Palette5.DuskBlue, right = Color(0xFF4B64A6))
+    val top = roof - Offset(0f, crownHeight)
+    drawLine(Palette5.DeepNavy, top, top - Offset(0f, tw * 0.45f), strokeWidth = tw * 0.03f, cap = StrokeCap.Round)
+    drawCircle(Color(0xFFE5484D), tw * 0.045f, top - Offset(0f, tw * 0.47f))
+}
+
+private val LotDirt = Color(0xFFC9A66B)
+private val SiteOrange = Color(0xFFF08A24)
+
+private fun DrawScope.lotDiamond(center: Offset, w: Float, h: Float, color: Color) {
+    drawPath(
+        Path().apply {
+            moveTo(center.x - w / 2, center.y); lineTo(center.x, center.y + h / 2)
+            lineTo(center.x + w / 2, center.y); lineTo(center.x, center.y - h / 2); close()
+        },
+        color,
+    )
+}
+
+/** A line of orange and white stripes, like the barrier around a building site. */
+private fun DrawScope.stripedBarrier(from: Offset, to: Offset, stripes: Int, thickness: Float) {
+    for (k in 0 until stripes) {
+        val a = Offset(lerp(from.x, to.x, k / stripes.toFloat()), lerp(from.y, to.y, k / stripes.toFloat()))
+        val b = Offset(lerp(from.x, to.x, (k + 1) / stripes.toFloat()), lerp(from.y, to.y, (k + 1) / stripes.toFloat()))
+        drawLine(if (k % 2 == 0) SiteOrange else Color.White, a, b, strokeWidth = thickness, cap = StrokeCap.Butt)
+    }
+}
+
+/** A building site: a dirt lot with a half-built block, scaffolding, a swaying crane and a barrier in front. */
+private fun DrawScope.drawConstruction(sprite: Sprite) {
+    val tw = sprite.tileWidth
+    val w = sprite.size * tw * BUILDING_INSET
+    val h = w / 2
+    val c = sprite.anchor
+    lotDiamond(c, w * 1.04f, h * 1.04f, LotDirt)
+
+    // The first floor of the new building
+    drawIsoBox(c, w * 0.62f, h * 0.62f, 0.3f * tw, top = Color(0xFFBFC6D4), left = Color(0xFF8E99B3), right = Color(0xFFA3AEC6))
+
+    // Scaffolding: poles at the four corners of the block and two cross bars
+    val pole = 0.8f * tw
+    val corners = listOf(
+        Offset(c.x - w * 0.31f, c.y), Offset(c.x, c.y + h * 0.31f), Offset(c.x + w * 0.31f, c.y), Offset(c.x, c.y - h * 0.31f),
+    )
+    corners.forEach { drawLine(Palette5.DeepNavy, it, it - Offset(0f, pole), strokeWidth = tw * 0.02f) }
+    for (level in listOf(0.4f, 0.8f)) {
+        val up = Offset(0f, pole * level)
+        drawLine(Palette5.DeepNavy, corners[0] - up, corners[1] - up, strokeWidth = tw * 0.015f)
+        drawLine(Palette5.DeepNavy, corners[1] - up, corners[2] - up, strokeWidth = tw * 0.015f)
+    }
+
+    // The crane: a mast at the back, a jib to the right, and a hook that swings a little
+    val base = Offset(c.x - w * 0.2f, c.y - h * 0.15f)
+    val mastTop = base - Offset(0f, 1.7f * tw)
+    drawLine(SiteOrange, base, mastTop, strokeWidth = tw * 0.045f)
+    drawLine(SiteOrange, mastTop + Offset(-0.22f * tw, 0f), mastTop + Offset(0.95f * tw, 0f), strokeWidth = tw * 0.035f, cap = StrokeCap.Round)
+    drawRect(Palette5.DeepNavy, mastTop + Offset(-0.26f * tw, -0.02f * tw), Size(0.1f * tw, 0.08f * tw))
+    val swing = sin(sprite.time * 1.1f) * 0.05f * tw
+    val hookTop = mastTop + Offset(0.7f * tw, 0f)
+    val hook = hookTop + Offset(swing, 0.6f * tw)
+    drawLine(Palette5.DeepNavy, hookTop, hook, strokeWidth = tw * 0.012f)
+    drawRect(Color(0xFF8E99B3), hook - Offset(0.05f * tw, 0f), Size(0.1f * tw, 0.07f * tw))
+
+    // A barrier along the two front edges
+    val left = Offset(c.x - w / 2, c.y)
+    val front = Offset(c.x, c.y + h / 2)
+    val right = Offset(c.x + w / 2, c.y)
+    stripedBarrier(left, front, 6, tw * 0.05f)
+    stripedBarrier(front, right, 6, tw * 0.05f)
+}
+
+/** A lot with nothing on it but a "for rent" sign: a white board with a red band and three lines of text. */
+private fun DrawScope.drawForRent(sprite: Sprite) {
+    val tw = sprite.tileWidth
+    val w = sprite.size * tw * BUILDING_INSET
+    val h = w / 2
+    val c = sprite.anchor
+    lotDiamond(c, w * 1.02f, h * 1.02f, Color(0xFFD9DEE8))
+    lotDiamond(c, w * 0.9f, h * 0.9f, Color(0xFFE6EAF2))
+
+    // The sign: two posts and a board
+    val post = c + Offset(0f, h * 0.18f)
+    val boardW = 0.62f * tw
+    val boardH = 0.34f * tw
+    val boardTop = post - Offset(boardW / 2, 0.95f * tw)
+    drawLine(Color(0xFF8A6A47), post, post - Offset(boardW * 0.3f, 0.7f * tw), strokeWidth = tw * 0.035f)
+    drawLine(Color(0xFF8A6A47), post, post - Offset(-boardW * 0.3f, 0.7f * tw), strokeWidth = tw * 0.035f)
+    drawRoundRect(Color.White, boardTop, Size(boardW, boardH), CornerRadius(tw * 0.03f))
+    drawRoundRect(Palette5.DeepNavy, boardTop, Size(boardW, boardH), CornerRadius(tw * 0.03f), style = Stroke(tw * 0.015f))
+    drawRect(Color(0xFFE5484D), boardTop + Offset(tw * 0.015f, tw * 0.015f), Size(boardW - tw * 0.03f, boardH * 0.34f))
+    for (line in 0..1) {
+        val y = boardTop.y + boardH * (0.55f + line * 0.2f)
+        drawLine(Palette5.DuskBlue, Offset(boardTop.x + boardW * 0.14f, y), Offset(boardTop.x + boardW * (0.86f - line * 0.2f), y), strokeWidth = tw * 0.02f, cap = StrokeCap.Round)
+    }
 }

@@ -32,7 +32,7 @@ data class BuildingBubble(
 /** Works out the bubbles for the town from the game state. Only neighbors who have already moved in get one. */
 object Bubbles {
     fun of(state: GameState, neighbors: List<Neighbor>): List<BuildingBubble> =
-        neighbors.filter { it.movesInDay <= state.day }.map { n ->
+        neighbors.filter { it.hasMovedIn(Curriculum.levelOf(state.xp)) }.map { n ->
             val problem = NetworkMonitor.status(state, n) == LinkStatus.DOWN
             val job = state.active?.neighborId == n.id
             val hearts = state.hearts[n.id] ?: 0

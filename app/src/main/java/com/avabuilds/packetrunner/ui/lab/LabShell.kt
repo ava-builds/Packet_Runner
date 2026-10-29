@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.avabuilds.packetrunner.game.Curriculum
 import com.avabuilds.packetrunner.network.Concept
 import com.avabuilds.packetrunner.network.LabGame
 import com.avabuilds.packetrunner.ui.PR
@@ -30,9 +31,9 @@ import com.avabuilds.packetrunner.ui.Panel
 import com.avabuilds.packetrunner.ui.Pill
 import com.avabuilds.packetrunner.ui.scene.ConceptCardView
 
-/** The Lab menu: three small games that pay a little once a day. */
+/** The Lab menu: small games that pay a little once a day. A game opens with the level of its topic; locked ones show which level. */
 @Composable
-fun LabMenu(doneToday: Set<String>, onPick: (LabGame) -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+fun LabMenu(doneToday: Set<String>, level: Int, onPick: (LabGame) -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize().background(PR.Bg).clickable(enabled = false) {}) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -44,12 +45,21 @@ fun LabMenu(doneToday: Set<String>, onPick: (LabGame) -> Unit, onClose: () -> Un
             }
             LabGame.entries.forEach { game ->
                 val done = game.id in doneToday
-                Panel(Modifier.clickable { onPick(game) }, color = PR.White, borderColor = if (done) PR.Green600 else Palette5.PersianBlue) {
+                val open = Curriculum.labOpen(game.id, level)
+                Panel(
+                    if (open) Modifier.clickable { onPick(game) } else Modifier,
+                    color = if (open) PR.White else PR.GrayFill,
+                    borderColor = if (!open) PR.Line else if (done) PR.Green600 else Palette5.PersianBlue,
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(game.title, Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = PR.Ink)
-                        if (done) Pill("✓ paid today", PR.Green50, PR.Green800) else Pill("₩${game.reward}", PR.Amber50, PR.Amber800)
+                        Text(game.title, Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (open) PR.Ink else PR.Gray)
+                        when {
+                            !open -> Pill("🔒 Level ${Curriculum.labLevel(game.id)}", PR.GrayFill, PR.Gray)
+                            done -> Pill("✓ paid today", PR.Green50, PR.Green800)
+                            else -> Pill("₩${game.reward}", PR.Amber50, PR.Amber800)
+                        }
                     }
-                    Text(game.blurb, fontSize = 13.sp, color = PR.Muted)
+                    Text(if (open) game.blurb else "Opens at level ${Curriculum.labLevel(game.id)}: ${Curriculum.stage(Curriculum.labLevel(game.id)).title}.", fontSize = 13.sp, color = PR.Muted)
                 }
             }
         }

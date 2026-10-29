@@ -102,6 +102,7 @@ object CallPlanner {
         schedule: WorkSchedule,
         day: WallTime,
         gameDay: Int,
+        level: Int,
         neighbors: List<Neighbor>,
         connected: Set<String>,
         generator: RequestGenerator,
@@ -110,15 +111,15 @@ object CallPlanner {
     ): CallBook {
         if (!schedule.isWorkday(day.weekday)) return CallBook(day.epochDay)
         val rnd = Random(generator.seed * 31L + day.epochDay)
-        val movedIn = neighbors.filter { it.movesInDay <= gameDay }
+        val movedIn = neighbors.filter { it.hasMovedIn(level) }
         // a place without internet calls once (it asks for an install); a connected one may call twice
-        val pool = movedIn.flatMap { n -> if (n.id in connected || n.movesInDay > gameDay) listOf(n, n) else listOf(n) }.shuffled(rnd)
+        val pool = movedIn.flatMap { n -> if (n.id in connected) listOf(n, n) else listOf(n) }.shuffled(rnd)
         val allowed = allowedMinutes(schedule).filter { it >= fromMinute + 2 }
         val count = minOf(rnd.nextInt(MIN_CALLS, MAX_CALLS + 1), pool.size, allowed.size / MIN_GAP + 1)
         val minutes = pickMinutes(allowed, count, rnd)
         val calls = pool.take(minutes.size).zip(minutes).mapIndexed { i, (neighbor, minute) ->
             val id = (day.epochDay * 10 + i).toInt()
-            PlannedCall(generator.requestFor(id, neighbor, connected, gameDay, minute.toFloat(), rnd))
+            PlannedCall(generator.requestFor(id, neighbor, connected, gameDay, level, minute.toFloat(), rnd))
         }
         return CallBook(day.epochDay, calls)
     }

@@ -9,14 +9,17 @@ import org.junit.Test
 class BubblesTest {
     private val neighbors = Neighbors.default()
     private val generator = RequestGenerator(2026L)
-    private fun fresh() = GameEngine.newGame(neighbors, generator)
+    /** A new game at the last level, so everyone lives in town. */
+    private fun fresh() = GameEngine.newGame(neighbors, generator).copy(xp = Progress.xpToReach(Curriculum.maxLevel))
     private fun bubble(s: GameState, building: String) = Bubbles.of(s, neighbors).firstOrNull { it.buildingId == building }
 
     @Test fun onlyNeighborsWhoHaveMovedInGetABubble() {
-        val day1 = Bubbles.of(fresh(), neighbors).map { it.buildingId }.toSet()
-        assertEquals(setOf("house1", "cafe"), day1)
-        val day3 = Bubbles.of(fresh().copy(day = 3), neighbors).map { it.buildingId }.toSet()
-        assertTrue("cityhall" in day3 && "apartments" in day3 && "house3" in day3)
+        val level1 = Bubbles.of(fresh().copy(xp = 0), neighbors).map { it.buildingId }.toSet()
+        assertEquals(setOf("house1", "house2", "house3"), level1)
+        val level4 = Bubbles.of(fresh().copy(xp = Progress.xpToReach(4)), neighbors).map { it.buildingId }.toSet()
+        assertTrue("cityhall" in level4 && "cafe" in level4 && "apartments" !in level4)
+        val level5 = Bubbles.of(fresh().copy(xp = Progress.xpToReach(5)), neighbors).map { it.buildingId }.toSet()
+        assertTrue("apartments" in level5)
     }
 
     @Test fun theBubbleShowsTheHeartsOfThatNeighbor() {

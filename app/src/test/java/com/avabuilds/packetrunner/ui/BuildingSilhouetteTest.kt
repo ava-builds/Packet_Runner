@@ -27,7 +27,15 @@ class BuildingSilhouetteTest {
 
     @Test fun tappingTheSkyAboveABuildingMissesIt() {
         BuildingType.entries.forEach { type ->
-            assertFalse(type.name, pointInPolygon(buildingSilhouette(type, center, tw, 2), Vec2(200f, 0f)))
+            assertFalse(type.name, pointInPolygon(buildingSilhouette(type, center, tw, 2), Vec2(200f, -1000f))) // far above even the tallest building
         }
+    }
+
+    @Test fun theTowerIsTallerThanTheOfficeSoATapHighUpHitsOnlyTheTower() {
+        val tower = buildingSilhouette(BuildingType.TOWER, center, tw, size = 2)
+        val office = buildingSilhouette(BuildingType.OFFICE, center, tw, size = 2)
+        val high = Vec2(center.x, center.y - tw * 2.2f)
+        assertTrue(pointInPolygon(tower, high))
+        assertFalse(pointInPolygon(office, high))
     }
 }

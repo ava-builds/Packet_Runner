@@ -53,7 +53,7 @@ class SaveDataTest {
         val restored = GameEngine.restore(SaveData.from(s), neighbors, generator)
         assertEquals(2, restored.day)
         assertEquals(900, restored.money)
-        assertEquals(s.connected, restored.connected)
+        assertTrue(restored.connected.containsAll(s.connected)) // plus the places that had internet from the start
         assertEquals(3, restored.hearts["mina"])
         assertEquals(s.solved, restored.solved)
         assertEquals(Clock.DAY_START, restored.minute, 0.001f)
@@ -146,7 +146,7 @@ class ReloadTest {
         val a = RequestGenerator(1L)
         val b = RequestGenerator(2L)
         val connected = neighbors.map { it.id }.toSet()
-        val differ = (1..6).any { a.callsFor(it, neighbors, connected) != b.callsFor(it, neighbors, connected) }
+        val differ = (1..6).any { a.callsFor(it, 7, neighbors, connected) != b.callsFor(it, 7, neighbors, connected) }
         assertTrue(differ)
     }
 

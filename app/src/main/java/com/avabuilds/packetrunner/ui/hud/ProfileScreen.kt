@@ -52,6 +52,8 @@ fun ProfileScreen(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     onWorkSettings: () -> Unit = {},
+    /** Only in debug builds: adds XP so the levels can be tried quickly. */
+    onDebugXp: (() -> Unit)? = null,
 ) {
     val progress = Progress.progress(state.xp)
     Box(modifier.fillMaxSize().background(PR.Bg).clickable(enabled = false) {}) {
@@ -67,6 +69,9 @@ fun ProfileScreen(
                 }
             }
 
+            NextUnlockCard(state.xp)
+            CoursePath(state.xp)
+
             Panel(color = PR.White, borderColor = PR.Line) {
                 Text("How it is going", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 StatRow("Day", "${state.day}")
@@ -81,6 +86,8 @@ fun ProfileScreen(
             }
 
             com.avabuilds.packetrunner.ui.SecondaryButton("⚙ Work settings and demo mode", onClick = onWorkSettings)
+
+            if (onDebugXp != null) com.avabuilds.packetrunner.ui.SecondaryButton("🧪 Debug: +100 XP", onClick = onDebugXp)
 
             FriendsPanel(neighbors, state)
 

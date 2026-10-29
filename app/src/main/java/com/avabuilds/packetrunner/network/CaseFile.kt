@@ -70,6 +70,16 @@ class CaseSession(val case: CaseFile) {
 object CaseFiles {
     val all: List<CaseFile> get() = ArpCases.all + FragmentCases.all + IcmpCases.all + WifiCases.all + TowerCases.all + MobileIpCases.all + TransportCases.all
 
-    /** Each case job is a different case, so the same one does not come twice in a row. */
-    fun forJob(jobsDoneBefore: Int): CaseFile = all[jobsDoneBefore % all.size]
+    /** The next case for a call from the Office Tower: its tenants bring the tower's own cases (hubs, switches). */
+    fun forTower(jobsDoneBefore: Int): CaseFile = TowerCases.all[jobsDoneBefore % TowerCases.all.size]
+
+    fun byId(id: String): CaseFile? = all.firstOrNull { it.id == id }
+
+    /**
+     * The case for the next case job at the player's [level], given how many case jobs were done before. Only cases of topics
+     * the course has reached come, the newest topic first, mixed with earlier ones (see [com.avabuilds.packetrunner.game.Curriculum.pickCase]).
+     * Null while no case is open yet.
+     */
+    fun pick(level: Int, jobsDoneBefore: Int): CaseFile? =
+        com.avabuilds.packetrunner.game.Curriculum.pickCase(level, jobsDoneBefore)?.let(::byId)
 }

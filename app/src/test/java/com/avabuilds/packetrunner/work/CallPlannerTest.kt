@@ -18,8 +18,8 @@ class CallPlannerTest {
     private val neighbors = Neighbors.default()
     private val generator = RequestGenerator(99L)
     private val everyone = neighbors.map { it.id }.toSet()
-    private fun plan(day: Int, game: Int = 6, connected: Set<String> = everyone, schedule: WorkSchedule = s) =
-        CallPlanner.plan(schedule, WallTime.week(day, 9), game, neighbors, connected, generator)
+    private fun plan(day: Int, game: Int = 6, connected: Set<String> = everyone, schedule: WorkSchedule = s, level: Int = 7) =
+        CallPlanner.plan(schedule, WallTime.week(day, 9), game, level = level, neighbors = neighbors, connected = connected, generator = generator)
 
     @Test fun aWorkdayGetsThreeToFiveCalls() {
         for (d in 0 until 5) assertTrue("day $d", plan(d).calls.size in 3..5)
@@ -43,13 +43,13 @@ class CallPlannerTest {
     }
 
     @Test fun aPlanMadeInTheMiddleOfTheDayHasNoCallsInThePast() {
-        val noon = CallPlanner.plan(s, WallTime.week(0, 14), 6, neighbors, everyone, generator, fromMinute = 14 * 60)
+        val noon = CallPlanner.plan(s, WallTime.week(0, 14), 6, 7, neighbors, everyone, generator, fromMinute = 14 * 60)
         assertTrue(noon.calls.isNotEmpty())
         noon.calls.forEach { assertTrue(it.minute > 14 * 60) }
     }
 
     @Test fun aPlanMadeAfterTheLastCallTimeIsEmpty() {
-        assertTrue(CallPlanner.plan(s, WallTime.week(0, 18), 6, neighbors, everyone, generator, fromMinute = 18 * 60).calls.isEmpty())
+        assertTrue(CallPlanner.plan(s, WallTime.week(0, 18), 6, 7, neighbors, everyone, generator, fromMinute = 18 * 60).calls.isEmpty())
     }
 
     @Test fun callsAreSpacedOutAndInOrder() {
@@ -67,14 +67,14 @@ class CallPlannerTest {
 
     @Test fun thePlanIsTheSameForTheSameDayAndSeedAndDifferentOtherwise() {
         assertEquals(plan(2), plan(2))
-        assertTrue((0 until 10).any { plan(it) != CallPlanner.plan(s, WallTime.week(it, 9), 6, neighbors, everyone, RequestGenerator(5L)) })
+        assertTrue((0 until 10).any { plan(it) != CallPlanner.plan(s, WallTime.week(it, 9), 6, 7, neighbors, everyone, RequestGenerator(5L)) })
     }
 
     @Test fun onlyNeighborsWhoHaveMovedInCallAndAnUnconnectedPlaceCallsOnce() {
-        val day1 = plan(0, game = 1, connected = setOf("hana"))
-        day1.calls.forEach { assertTrue(it.request.neighborId in setOf("mina", "hana")) }
-        assertTrue(day1.calls.count { it.request.neighborId == "mina" } <= 1)
-        assertTrue(day1.calls.size >= 2)
+        val day1 = plan(0, game = 1, connected = setOf("hana"), level = 1)
+        day1.calls.forEach { assertTrue(it.request.neighborId in setOf("mina", "joon", "sora")) } // only the houses live in town at level 1
+        day1.calls.groupBy { it.request.neighborId }.values.forEach { assertEquals(1, it.size) }
+        assertEquals(3, day1.calls.size)
     }
 
     @Test fun everyRequestMatchesTheNeighborsPlace() {

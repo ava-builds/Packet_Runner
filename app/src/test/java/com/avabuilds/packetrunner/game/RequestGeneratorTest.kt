@@ -9,36 +9,64 @@ class RequestGeneratorTest {
     private val generator = RequestGenerator(seed = 2026L)
     private val startConnected = neighbors.filter { it.hasInternetAtStart }.map { it.id }.toSet()
 
-    private fun calls(day: Int, connected: Set<String> = startConnected) =
-        generator.callsFor(day, neighbors, connected)
+    /** The calls of [day] at the player's [level]; by default the last level, when everyone lives in town. */
+    private fun calls(day: Int, connected: Set<String> = startConnected, level: Int = Curriculum.maxLevel) =
+        generator.callsFor(day, level, neighbors, connected)
 
     @Test fun sameSeedAndDayGiveTheSameCalls() {
-        assertEquals(calls(3), RequestGenerator(2026L).callsFor(3, neighbors, startConnected))
+        assertEquals(calls(3), RequestGenerator(2026L).callsFor(3, Curriculum.maxLevel, neighbors, startConnected))
     }
 
     @Test fun differentDaysGiveDifferentCalls() {
         assertTrue(calls(1) != calls(2))
     }
 
-    @Test fun dayOneIsScriptedAnInstallForMinaAndAFixForTheCafe() {
-        val day1 = calls(1)
-        assertEquals(setOf("mina", "hana"), day1.map { it.neighborId }.toSet())
-        assertEquals(RequestType.INSTALL, day1.first { it.neighborId == "mina" }.type)
-        assertEquals(RequestType.FIX, day1.first { it.neighborId == "hana" }.type)
+    @Test fun dayOneAtLevelOneIsTwoInstallsForTheHouses() {
+        val day1 = calls(1, level = 1)
+        assertEquals(2, day1.size)
+        assertTrue(day1.all { it.type == RequestType.INSTALL && it.buildingId.startsWith("house") })
     }
 
     @Test fun onlyNeighborsWhoMovedInCall() {
-        for (day in 1..6) {
-            calls(day).forEach { call ->
+        for (level in 1..Curriculum.maxLevel) for (day in 1..6) {
+            calls(day, level = level).forEach { call ->
                 val neighbor = neighbors.first { it.id == call.neighborId }
-                assertTrue("${neighbor.name} calls on day $day", neighbor.movesInDay <= day)
+                assertTrue("${neighbor.name} calls at level $level", neighbor.hasMovedIn(level))
             }
         }
     }
 
-    @Test fun aNewNeighborAlwaysCallsOnTheirFirstDay() {
-        assertTrue(calls(2).any { it.neighborId == "joon" && it.type == RequestType.INSTALL })
-        assertTrue(calls(3).any { it.neighborId == "sora" && it.type == RequestType.INSTALL })
+    @Test fun theCafeStartsCallingAtLevelTwoCityHallAtFourAndTheApartmentsAtFive() {
+        val all = neighbors.map { it.id }.toSet()
+        fun callers(level: Int) = (1..20).flatMap { calls(it, all, level) }.map { it.buildingId }.toSet()
+        assertTrue("cafe" !in callers(1))
+        assertTrue("cafe" in callers(2))
+        assertTrue("cityhall" !in callers(3) && "cityhall" in callers(4))
+        assertTrue("apartments" !in callers(4) && "apartments" in callers(5))
+    }
+
+    @Test fun placesWithoutInternetCallBeforeConnectedOnes() {
+        for (day in 1..8) {
+            val types = calls(day, level = 2).map { it.type }
+            // once a connected place calls, every place that still needs an install has already been called
+            val firstOther = types.indexOfFirst { it != RequestType.INSTALL }
+            if (firstOther >= 0) assertTrue(types.drop(firstOther).none { it == RequestType.INSTALL })
+        }
+    }
+
+    @Test fun helpAboutIpAddressesOnlyComesOnceDhcpIsPartOfTheCourse() {
+        val all = neighbors.map { it.id }.toSet()
+        fun types(level: Int) = (2..60).flatMap { calls(it, all, level) }.map { it.type }.toSet()
+        for (level in 1 until RequestGenerator.HELP_LEVEL) assertTrue("level $level", RequestType.HELP !in types(level))
+        assertTrue(RequestType.HELP in types(RequestGenerator.HELP_LEVEL))
+    }
+
+    @Test fun caseJobsOnlyComeOnceACaseTopicIsOpen() {
+        val all = neighbors.map { it.id }.toSet()
+        fun types(level: Int) = (2..60).flatMap { calls(it, all, level) }.map { it.type }.toSet()
+        assertTrue(RequestType.CASE !in types(1))
+        assertTrue(RequestType.CASE in types(2))
+        assertTrue(RequestType.CASE in types(Curriculum.maxLevel))
     }
 
     @Test fun nobodyCallsTwiceInADay() {
@@ -98,6 +126,6 @@ class RequestGeneratorTest {
     @Test fun rewardsFollowTheTypeAndGrowWithTheDay() {
         val install = calls(1).first { it.type == RequestType.INSTALL }
         assertEquals(200, install.reward)
-        assertEquals(210, calls(2).first { it.neighborId == "joon" }.reward)
+        assertEquals(210, calls(2).first { it.type == RequestType.INSTALL }.reward)
     }
 }

@@ -67,7 +67,7 @@ object GameEngine {
             money = START_MONEY,
             hearts = neighbors.associate { it.id to 0 },
             connected = connected,
-            upcoming = generator.callsFor(1, neighbors, connected),
+            upcoming = generator.callsFor(1, 1, neighbors, connected),
             seed = generator.seed,
         )
     }
@@ -235,13 +235,15 @@ object GameEngine {
      */
     fun restore(save: SaveData, neighbors: List<Neighbor>, generator: RequestGenerator): GameState {
         val clean = save.sanitized(neighbors)
+        // a place that had internet from the start is always connected, also in a save made before it lived in town
+        val connected = clean.connected + neighbors.filter { it.hasInternetAtStart }.map { it.id }
         return GameState(
             day = clean.day,
             minute = Clock.DAY_START,
             money = clean.money,
             hearts = neighbors.associate { it.id to (clean.hearts[it.id] ?: 0) },
-            connected = clean.connected,
-            upcoming = generator.callsFor(clean.day, neighbors, clean.connected).filter { it.id !in clean.rungToday },
+            connected = connected,
+            upcoming = generator.callsFor(clean.day, Curriculum.levelOf(clean.xp), neighbors, connected).filter { it.id !in clean.rungToday },
             solved = clean.solved,
             upgrades = clean.upgrades,
             xp = clean.xp,
@@ -315,7 +317,7 @@ object GameEngine {
         return state.copy(
             day = day,
             minute = Clock.DAY_START,
-            upcoming = generator.callsFor(day, neighbors, state.connected),
+            upcoming = generator.callsFor(day, Curriculum.levelOf(state.xp), neighbors, state.connected),
             ringing = null,
             active = null,
             todayEarned = 0,

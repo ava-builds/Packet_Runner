@@ -68,9 +68,9 @@ class ProgressTest {
 
     @Test fun catchingAProblemEarlyOnTheMonitorGivesXp() {
         val call = Request(1, RequestType.FIX, "hana", "cafe", "help", 150, 600f)
-        val s = fresh().copy(upcoming = listOf(call), minute = 600f - NetworkMonitor.WARNING_LEAD + 1f)
+        val s = fresh().copy(upcoming = listOf(call), minute = 600f - NetworkMonitor.WARNING_LEAD + 1f, xp = Progress.xpToReach(2)) // the cafe lives in town from level 2
         val result = NetworkMonitor.report(s, neighbors.first { it.id == "hana" })
-        assertEquals(Progress.EARLY_CATCH_XP, result.state.xp)
+        assertEquals(Progress.xpToReach(2) + Progress.EARLY_CATCH_XP, result.state.xp)
     }
 
     @Test fun xpSurvivesTheSaveAndTheNextDay() {
