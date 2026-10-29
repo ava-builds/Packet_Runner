@@ -15,12 +15,15 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // the Kotlin web tooling adds its own repository on the root project (Node.js and Yarn downloads), so project repositories are allowed
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         google()
         mavenCentral()
     }
 }
 
-rootProject.name = "Packet Runner"
+rootProject.name = "PacketRunner"
 include(":app")
+include(":shared")
+include(":web")

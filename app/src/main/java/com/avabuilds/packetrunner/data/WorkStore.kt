@@ -17,40 +17,8 @@ import kotlinx.coroutines.flow.first
 
 private val Context.workDataStore by preferencesDataStore(name = "work_life")
 
-/** Everything about the work life that has to survive closing the app. */
-data class WorkData(
-    val schedule: WorkSchedule = WorkSchedule(),
-    /** False until the player has chosen their work week on first launch. */
-    val configured: Boolean = false,
-    val demoMode: Boolean = false,
-    /** While demo mode is on: the real time (total seconds) and the game time it started from. */
-    val demoRealSec: Long = 0,
-    val demoGameSec: Long = 0,
-    val log: WorkLog = WorkLog(-1),
-    /** Today's customer calls, so they survive closing the app. */
-    val calls: CallBook = CallBook(-1),
-    /** The plan for the next workday, made ahead so notifications can be set up while the app is closed. */
-    val nextCalls: CallBook = CallBook(-1),
-    /** True once the player has been asked about notifications, so we ask only once. */
-    val notificationsAsked: Boolean = false,
-    /** The week in progress, for the Friday payday. */
-    val week: WeekTracker = WeekTracker(),
-)
-
-/** The clock this data describes: the real one, or the faster demo clock when demo mode is on. */
-fun WorkData.timeSource(real: com.avabuilds.packetrunner.work.TimeSource): com.avabuilds.packetrunner.work.TimeSource =
-    if (demoMode) com.avabuilds.packetrunner.work.ScaledTimeSource(
-        real,
-        com.avabuilds.packetrunner.work.WallTime(Math.floorDiv(demoRealSec, 86_400L), Math.floorMod(demoRealSec, 86_400L).toInt()),
-        com.avabuilds.packetrunner.work.WallTime(Math.floorDiv(demoGameSec, 86_400L), Math.floorMod(demoGameSec, 86_400L).toInt()),
-    ) else real
-
-/** Turns a set of days off into a number (bit 0 = Monday) and back, for storing. */
-fun daysOffToBits(days: Set<Weekday>): Int = days.fold(0) { acc, d -> acc or (1 shl d.ordinal) }
-fun bitsToDaysOff(bits: Int): Set<Weekday> = Weekday.entries.filter { bits and (1 shl it.ordinal) != 0 }.toSet()
-
 /** Keeps the work schedule, today's clock-in log and the demo setting on the phone, with DataStore. */
-class WorkStore(private val context: Context) {
+class WorkStore(private val context: Context) : WorkDataStore {
     private object Keys {
         val start = intPreferencesKey("start")
         val end = intPreferencesKey("end")
@@ -74,7 +42,7 @@ class WorkStore(private val context: Context) {
         val weekXp = intPreferencesKey("week_xp")
     }
 
-    suspend fun load(): WorkData {
+    override suspend fun load(): WorkData {
         val p: Preferences = context.workDataStore.data.first()
         val defaults = WorkSchedule()
         val schedule = WorkSchedule(
@@ -103,7 +71,7 @@ class WorkStore(private val context: Context) {
         )
     }
 
-    suspend fun save(data: WorkData) {
+    override suspend fun save(data: WorkData) {
         context.workDataStore.edit { p ->
             p[Keys.start] = data.schedule.startMinute
             p[Keys.end] = data.schedule.endMinute

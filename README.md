@@ -1,5 +1,7 @@
 # Packet Runner: Network Town
 
+**▶ [Play in your browser](https://ava-builds.github.io/Packet_Runner/)** (works on iPhone Safari, Android Chrome and computers; no install, no account)
+
 A cozy isometric life-sim for learning computer networking. You are the town's network engineer:
 neighbors phone you (install a router, fix the Wi-Fi, help with an IP address, solve a puzzling case), you walk to their
 building and solve the job. Concepts follow *Computer Networks: A Systems Approach* (Peterson and Davie).
@@ -7,10 +9,19 @@ building and solve the job. Concepts follow *Computer Networks: A Systems Approa
 
 The game is **fully playable offline**: no account and no internet are needed, and everything is saved on the phone.
 
-Kotlin, Jetpack Compose (minSdk 24). Open the project in Android Studio and run the `app` configuration.
-Packages: `game` (town, pathfinding, requests, day clock, monitor, XP and levels, the course progression, upgrades), `network` (the simulator, scenarios,
-puzzles and case files), `work` (the real-time work life), `notify` (call notifications), `data` (local save, notebook,
-optional cloud backup) and `ui` (screens and drawing).
+Kotlin Multiplatform with Compose Multiplatform. One game, two apps: an **Android app** (minSdk 24) and a **web app** (Kotlin/Wasm, runs in
+any modern browser). Open the project in Android Studio and run the `app` configuration for Android.
+
+Modules:
+
+- `shared`: the whole game, written once. `game` (town, pathfinding, requests, day clock, monitor, XP and levels, the course progression, upgrades),
+  `network` (the simulator, scenarios, puzzles and case files), `work` (the real-time work life), `data` (save, notebook and cloud-backup logic,
+  storage interfaces), `platform` (what differs between devices: storage, sound, call alerts) and `ui` (every screen and the town drawing).
+  Its tests run on the JVM and in the browser.
+- `app`: the Android app: the activity, DataStore saving, WorkManager call notifications, the AudioTrack chime, and the optional Firebase cloud backup.
+- `web`: the web app: the page, saving in the browser's localStorage, Web Audio sound, in-page call notifications and a small Korean font.
+
+An iOS app can be added later as one more target of `shared` without moving any game code.
 
 ## The course progression
 
@@ -73,6 +84,7 @@ buildings that need you.
 
 The game (day, money, town, friendship, upgrades, XP), the Engineer's notebook and the work schedule and calls are saved on the phone
 with DataStore, a moment after they change. The app opens straight into the town; there is no login. Closing the app loses nothing.
+The web version keeps the same things in the browser's localStorage, so it is saved per browser on that device (clearing the site's data erases it).
 
 ## Engineer's notebook
 
@@ -103,11 +115,44 @@ Your save is stored in one document, `players/{your uid}`, and your notes in `pl
 2. Open the **Rules** tab, paste the contents of `firestore.rules` from this repo, and press **Publish**. The rules let each player read and write only their own documents.
 3. Run the app, log in, play a little, and check **Firestore Database → Data → players** for your document.
 
+## Web version
+
+Live at **https://ava-builds.github.io/Packet_Runner/**. Open the link on a phone; on an iPhone use Safari and choose Share → Add to Home Screen to get
+a full-screen app with its own icon. Differences from Android: customer calls ring inside the page; a browser notification for a call is optional (Work
+settings → Call notifications) and only works while the page stays open, and on an iPhone only for a page added to the Home Screen. The first load
+downloads about 13 MB.
+
+Run it on your computer:
+
+```
+./gradlew :web:wasmJsBrowserDevelopmentRun
+```
+
+Add `?debug` to the link to get the "+100 XP" button in Profile for trying the levels.
+
+### Publishing to GitHub Pages
+
+The workflow `.github/workflows/pages.yml` tests the game on every push, and publishes the web version when the main branch changes.
+Set it up once:
+
+1. In the repository on GitHub open **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not "Deploy from a branch").
+3. Merge the work into `main` (or push to `main`). Open the **Actions** tab: the run "Test and deploy the web version" shows the steps. When it is green the page is live.
+4. If the deploy step says the branch is not allowed, open **Settings → Environments → github-pages** and make sure `main` is an allowed deployment branch.
+
 ## Tests
 
 ```
-./gradlew testDebugUnitTest
+./gradlew :shared:testAndroidHostTest     # the shared tests on the JVM
+./gradlew :shared:wasmJsBrowserTest       # the same tests in a browser (headless Chrome)
 ```
 
 The rules of the game and the networking logic are plain Kotlin and are unit-tested (the game engine, request planning, the simulator, the
-puzzles, every case file, the work clock and calls, saving and the notebook).
+puzzles, every case file, the work clock and calls, saving and the notebook). Every test runs on both platforms, which proves the game
+behaves the same on Android and in the browser.
+
+## Fonts and icons
+
+The browser has no Korean font inside the game's canvas, so the web app ships a small subset of Noto Sans KR (SIL Open Font License) with only the
+Korean characters the game uses. After adding Korean text, run `tools/make_korean_font.py` (the steps are in the file). `tools/make_web_icons.py`
+draws the Home Screen icons.

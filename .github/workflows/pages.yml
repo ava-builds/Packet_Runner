@@ -1,0 +1,60 @@
+# Tests the game and, on the main branch, publishes the web version to GitHub Pages:
+# https://ava-builds.github.io/Packet_Runner/
+name: Test and deploy the web version
+
+on:
+  push:
+    branches: [main, multiplatform]
+  pull_request:
+  workflow_dispatch:
+
+# a newer run replaces an older one that is still going
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # the Android part of the build needs the Android SDK (and its licenses accepted)
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # the shared tests run on the JVM and in WebAssembly (headless Chrome, which the runner has)
+      - name: Unit tests (JVM and WebAssembly)
+        run: ./gradlew :shared:testAndroidHostTest :shared:wasmJsBrowserTest --no-daemon
+
+      - name: Build the Android app
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Build the web version
+        run: ./gradlew :web:wasmJsBrowserDistribution --no-daemon
+
+      # keep the built page for the deploy job (only used on main)
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/build/dist/wasmJs/productionExecutable
+
+  deploy:
+    needs: test
+    # only the main branch goes live
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
