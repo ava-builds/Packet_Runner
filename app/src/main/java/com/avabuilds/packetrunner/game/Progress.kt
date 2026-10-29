@@ -25,6 +25,7 @@ object Progress {
         RequestType.HELP -> 40
         RequestType.ROUTE -> 70
         RequestType.NAT -> 70
+        RequestType.CASE -> 60
     }
 
     /** The XP a player needs in total to reach [level]. */

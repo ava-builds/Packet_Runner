@@ -9,7 +9,7 @@ import kotlin.random.Random
  * Rules:
  *  - only neighbors who have already moved in call;
  *  - a neighbor calls at most once a day, and new neighbors always call on their first day;
- *  - City Hall always asks for a ROUTE job and the Apartments for a NAT job; a place without internet asks for an INSTALL, a place with internet asks for a FIX or HELP
+ *  - City Hall always asks for a ROUTE job and the Apartments for a NAT job; a place without internet asks for an INSTALL, a place with internet asks for a FIX or HELP, and a house now and then for a CASE
  *    (day 1 is scripted: installs for new homes, a fix for the others);
  *  - the number of calls grows with the day: 2, 2, 3, 3, 4 (never more than 4);
  *  - calls are spread between 09:00 and 16:00.
@@ -45,6 +45,7 @@ class RequestGenerator(val seed: Long) {
             neighbor.kind == BuildingType.APARTMENTS -> RequestType.NAT
             neighbor.id !in connected -> RequestType.INSTALL
             day == 1 -> RequestType.FIX
+            neighbor.kind == BuildingType.HOUSE && rnd.nextInt(10) < 4 -> RequestType.CASE
             rnd.nextInt(10) < 7 -> RequestType.FIX
             else -> RequestType.HELP
         }
@@ -77,6 +78,10 @@ class RequestGenerator(val seed: Long) {
                 "Our flats share one Internet address and the replies get mixed up! Can you sort out the NAT?",
                 "The tenants complain: some websites work, others never answer. Please look at the router's NAT table.",
             )
+            RequestType.CASE -> listOf(
+                "Something is odd with our network, but I can't tell what. Can you investigate?",
+                "My laptop connects but nothing loads. Could you take a look?",
+            )
             RequestType.HELP ->
                 if (isShop) listOf("Customers say they can't get an IP address on our Wi-Fi!")
                 else listOf("My new phone can't get internet!", "Our guests can't connect. It says there is no IP address.")
@@ -88,6 +93,6 @@ class RequestGenerator(val seed: Long) {
         /** The seed of saves made before every game got its own. */
         const val DEFAULT_SEED = 2026L
         const val MAX_CALLS = 4
-        val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100, RequestType.ROUTE to 180, RequestType.NAT to 170)
+        val REWARDS = mapOf(RequestType.INSTALL to 200, RequestType.FIX to 150, RequestType.HELP to 100, RequestType.ROUTE to 180, RequestType.NAT to 170, RequestType.CASE to 170)
     }
 }

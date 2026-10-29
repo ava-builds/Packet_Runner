@@ -99,6 +99,9 @@ import com.avabuilds.packetrunner.ui.work.rememberWorkLife
 import com.avabuilds.packetrunner.ui.office.UpgradeShop
 import com.avabuilds.packetrunner.ui.office.Workbench
 import com.avabuilds.packetrunner.ui.scene.NatScreen
+import com.avabuilds.packetrunner.network.CaseFile
+import com.avabuilds.packetrunner.network.CaseFiles
+import com.avabuilds.packetrunner.ui.scene.CaseScreen
 import com.avabuilds.packetrunner.ui.scene.RoutingScreen
 import com.avabuilds.packetrunner.ui.scene.SceneScreen
 import kotlinx.coroutines.delay
@@ -152,6 +155,7 @@ fun GameScreen(
     var saveMark by remember { mutableStateOf("") } // cloud mark: ... while saving, a tick when stored, ! when it failed
     var nat by remember { mutableStateOf<NatPuzzle?>(null) } // the Apartments NAT job, if open
     var routing by remember { mutableStateOf<RoutingPuzzle?>(null) } // the City Hall router job, if open
+    var caseFile by remember { mutableStateOf<CaseFile?>(null) } // the look-and-fix case, if open
     var workbenchOpen by remember { mutableStateOf(false) }
     var labMenuOpen by remember { mutableStateOf(false) }
     var labGame by remember { mutableStateOf<LabGame?>(null) }
@@ -398,6 +402,8 @@ fun GameScreen(
                         onStart = {
                             if (active.type == RequestType.ROUTE) {
                                 routing = RoutingPuzzles.forJob(state.solved.count { it.type == RequestType.ROUTE })
+                            } else if (active.type == RequestType.CASE) {
+                                caseFile = CaseFiles.forJob(state.solved.count { it.type == RequestType.CASE })
                             } else if (active.type == RequestType.NAT) {
                                 nat = NatPuzzles.forJob(state.solved.count { it.type == RequestType.NAT })
                             } else {
@@ -552,6 +558,27 @@ fun GameScreen(
                 onSaveToNotebook = { title, concepts -> saveConceptsAsNote(title, concepts) },
                 onFinish = { success, payout, stars ->
                     nat = null
+                    if (success) {
+                        toast = "+₩$payout · ${"★".repeat(stars)} · ${neighbor.name} is happier"
+                        state = GameEngine.complete(state, solved = true, payout = payout, bonusHearts = if (stars == 3) 1 else 0)
+                    } else {
+                        toast = "${neighbor.name} is unhappy. −₩50"
+                        state = GameEngine.complete(state, solved = false)
+                    }
+                },
+            )
+        }
+
+        val openCase = caseFile
+        if (openCase != null && active != null) {
+            val neighbor = neighbors.first { it.id == active.neighborId }
+            CaseScreen(
+                case = openCase,
+                callerName = neighbor.name,
+                reward = active.reward,
+                onSaveToNotebook = { title, concepts -> saveConceptsAsNote(title, concepts) },
+                onFinish = { success, payout, stars ->
+                    caseFile = null
                     if (success) {
                         toast = "+₩$payout · ${"★".repeat(stars)} · ${neighbor.name} is happier"
                         state = GameEngine.complete(state, solved = true, payout = payout, bonusHearts = if (stars == 3) 1 else 0)

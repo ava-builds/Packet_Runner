@@ -429,6 +429,6 @@ object Scenarios {
         RequestType.INSTALL -> install(request.buildingId)
         RequestType.FIX -> fix(request.buildingId)
         RequestType.HELP -> help(request.buildingId)
-        RequestType.ROUTE, RequestType.NAT -> null // these jobs have their own screens (RoutingScreen, NatScreen)
+        RequestType.ROUTE, RequestType.NAT, RequestType.CASE -> null // these jobs have their own screens (RoutingScreen, NatScreen, CaseScreen)
     }
 }
