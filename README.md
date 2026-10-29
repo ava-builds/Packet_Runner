@@ -3,6 +3,7 @@
 A cozy isometric life-sim for learning computer networking. You are the town's network engineer:
 neighbors phone you (install a router, fix the Wi-Fi, help with an IP address, solve a puzzling case), you walk to their
 building and solve the job. Concepts follow *Computer Networks: A Systems Approach* (Peterson and Davie).
+<img width="2000" height="600" alt="packetrunner" src="https://github.com/user-attachments/assets/ae71442c-573a-4760-aa9a-8adb955d9a47" />
 
 The game is **fully playable offline**: no account and no internet are needed, and everything is saved on the phone.
 
