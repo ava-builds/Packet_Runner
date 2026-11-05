@@ -28,6 +28,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalDensity
@@ -65,6 +66,7 @@ import kotlin.math.roundToInt
 
 /** The 10 x 10 town is about this many tiles wide on screen at the start, so it fills the width. */
 private const val FILL_TILES = 11.5f
+private const val FILL_HEIGHT_DIVISOR = 11f
 
 /** Steps per second of the slow animation (swaying trees, a person's idle bob) in the layer with the buildings. */
 private const val SWAY_STEPS = 15f
@@ -104,8 +106,9 @@ fun IsoTownScreen(
     val sprites: SpriteProvider = remember { CanvasSpriteProvider() }
     val textMeasurer = rememberTextMeasurer()
     // The town fills most of the screen width at the start; pinch to zoom as before
-    val screenWidthPx = LocalWindowInfo.current.containerSize.width.toFloat()
-    val tileWidth = screenWidthPx / FILL_TILES
+    // On a wide window (a laptop) the height decides, so the whole town fits above the bottom panel
+    val containerSize = LocalWindowInfo.current.containerSize
+    val tileWidth = minOf(containerSize.width / FILL_TILES, containerSize.height / FILL_HEIGHT_DIVISOR)
     val scenery = remember(town) { Scenery.build(town) }
     // no cables run to a building that is not open yet
     val openCables = remember(scenery, lockedBuildings) { scenery.cables.filter { it.buildingId !in lockedBuildings } }
@@ -162,6 +165,20 @@ fun IsoTownScreen(
         modifier
             .fillMaxSize()
             .background(PR.Bg)
+            // mouse wheel zooms the town on a computer
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type != PointerEventType.Scroll) continue
+                        val change = event.changes.firstOrNull() ?: continue
+                        val viewCenter = Vec2(size.width / 2f, size.height * ViewTransform.VIEW_CENTER_Y)
+                        val factor = if (change.scrollDelta.y > 0f) 0.9f else 1.1f
+                        camera = camera.zoomAbout(change.position.toVec2(), factor, viewCenter)
+                        change.consume()
+                    }
+                }
+            }
             .pointerInput(Unit) {
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     val viewCenter = Vec2(size.width / 2f, size.height * ViewTransform.VIEW_CENTER_Y)
